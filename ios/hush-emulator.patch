@@ -7,7 +7,7 @@ index db61330..e51122e 100644
  @implementation BackgroundLayer
  
 -//Blue gradient background
-+//Void Deck carbon gradient background
++//Hush Emulator carbon gradient background
  + (CAGradientLayer*)blueGradient
  {
  
@@ -34,7 +34,7 @@ index 53ffebe..526e344 100644
                      <nil key="highlightedColor"/>
                  </label>
 -                <label opaque="NO" clipsSubviews="YES" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Play!" textAlignment="center" lineBreakMode="middleTruncation" baselineAdjustment="alignBaselines" minimumFontSize="18" translatesAutoresizingMaskIntoConstraints="NO" id="kId-c2-rCX">
-+                <label opaque="NO" clipsSubviews="YES" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="VOID//DECK" textAlignment="center" lineBreakMode="middleTruncation" baselineAdjustment="alignBaselines" minimumFontSize="18" translatesAutoresizingMaskIntoConstraints="NO" id="kId-c2-rCX">
++                <label opaque="NO" clipsSubviews="YES" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="HUSH EMULATOR" textAlignment="center" lineBreakMode="middleTruncation" baselineAdjustment="alignBaselines" minimumFontSize="18" translatesAutoresizingMaskIntoConstraints="NO" id="kId-c2-rCX">
                      <rect key="frame" x="20" y="140" width="441" height="43"/>
                      <fontDescription key="fontDescription" type="boldSystem" pointSize="36"/>
 -                    <color key="textColor" cocoaTouchSystemColor="darkTextColor"/>
@@ -85,7 +85,7 @@ index 1a36a6c..292b09d 100644
  target_link_libraries(Play ${UI_IOS_PROJECT_LIBS} "-ObjC -lsqlite3 -framework OpenAL")
  
 -target_compile_definitions(Play PRIVATE ${UI_IOS_DEFINITIONS_LIST})
-+target_compile_definitions(Play PRIVATE ${UI_IOS_DEFINITIONS_LIST} VOIDDECK_VERSION="3.2.1")
++target_compile_definitions(Play PRIVATE ${UI_IOS_DEFINITIONS_LIST} HUSH_VERSION="5.0.0")
  
  # Set a custom plist file for the app bundle
  # NOTE: for these values to be used Info.plist has to be edited
@@ -98,14 +98,14 @@ index 1a36a6c..292b09d 100644
 -		MACOSX_BUNDLE_LONG_VERSION_STRING "${PROJECT_NAME} Version ${PROJECT_Version}"
 -		MACOSX_BUNDLE_BUNDLE_NAME ${PROJECT_NAME}
 -		MACOSX_BUNDLE_SHORT_VERSION_STRING "${PROJECT_Version}"
-+		MACOSX_BUNDLE_INFO_STRING "VOID DECK"
-+		MACOSX_BUNDLE_GUI_IDENTIFIER "com.voiddeck.app"
-+		MACOSX_BUNDLE_LONG_VERSION_STRING "VOID DECK Version 3.2.1"
-+		MACOSX_BUNDLE_BUNDLE_NAME "VOID DECK"
-+		MACOSX_BUNDLE_SHORT_VERSION_STRING "3.2.1"
++		MACOSX_BUNDLE_INFO_STRING "HUSH EMULATOR"
++		MACOSX_BUNDLE_GUI_IDENTIFIER "com.hush.emulator"
++		MACOSX_BUNDLE_LONG_VERSION_STRING "HUSH EMULATOR Version 5.0.0"
++		MACOSX_BUNDLE_BUNDLE_NAME "HUSH EMULATOR"
++		MACOSX_BUNDLE_SHORT_VERSION_STRING "5.0.0"
  		MACOSX_BUNDLE_BUNDLE_VERSION ${DATE}
 -		MACOSX_BUNDLE_COPYRIGHT "© Virtual Applications, 2017"
-+		MACOSX_BUNDLE_COPYRIGHT "VOID DECK 3.2.1"
++		MACOSX_BUNDLE_COPYRIGHT "HUSH EMULATOR 5.0.0"
  		MACOSX_BUNDLE_INFO_PLIST "${CMAKE_CURRENT_SOURCE_DIR}/Info.plist.in"
  		XCODE_ATTRIBUTE_TARGETED_DEVICE_FAMILY "1,2"
  		RESOURCE "${OSX_RES}"
@@ -137,7 +137,7 @@ index 4b6da50..6bded5c 100644
  	});
  }
  
-+static NSString* const FavoritesKey = @"voiddeck.favorites";
++static NSString* const FavoritesKey = @"hush.favorites";
 +
 +static NSString* PathKey(const BootablesDb::Bootable& b)
 +{
@@ -336,7 +336,7 @@ index 6f8edd2..07f90d1 100644
  	<string>6.0</string>
  	<key>CFBundleName</key>
 -	<string>Play!</string>
-+	<string>VOID DECK</string>
++	<string>HUSH EMULATOR</string>
  	<key>CFBundlePackageType</key>
  	<string>APPL</string>
  	<key>CFBundleShortVersionString</key>
@@ -345,7 +345,7 @@ index 6f8edd2..07f90d1 100644
  	</array>
  	<key>NSLocalNetworkUsageDescription</key>
 -	<string>Play! uses the local network to find and communicate with AltServer.</string>
-+	<string>VOID DECK uses the local network to find and communicate with AltServer.</string>
++	<string>HUSH EMULATOR uses the local network to find and communicate with AltServer.</string>
  	<key>ALTDeviceID</key>
  	<string></string>
  </dict>
@@ -1308,14 +1308,14 @@ index f7809a0..420a526 100644
  	[enableAltServerJIT setOn:CAppConfig::GetInstance().GetPreferenceBoolean(PREFERENCE_ALTSTORE_JIT_ENABLED)];
  
 -	NSString* versionString = [NSString stringWithFormat:@"%s - %s", PLAY_VERSION, __DATE__];
-+	NSString* versionString = [NSString stringWithFormat:@"VOID DECK v%s", VOIDDECK_VERSION];
++	NSString* versionString = [NSString stringWithFormat:@"HUSH EMULATOR v%s", HUSH_VERSION];
  	versionInfoLabel.text = versionString;
 +
-+	[self applyVoidDeckTheme];
++	[self applyHushTheme];
 +
 +	UISegmentedControl* padSize = [[UISegmentedControl alloc] initWithItems:@[ @"Pad: Small", @"Pad: Medium", @"Pad: Large" ]];
 +	NSUserDefaults* defaults = [NSUserDefaults standardUserDefaults];
-+	padSize.selectedSegmentIndex = [defaults objectForKey:@"voiddeck.padSize"] ? [defaults integerForKey:@"voiddeck.padSize"] : 1;
++	padSize.selectedSegmentIndex = [defaults objectForKey:@"hush.padSize"] ? [defaults integerForKey:@"hush.padSize"] : 1;
 +	[padSize addTarget:self action:@selector(onPadSizeChanged:) forControlEvents:UIControlEventValueChanged];
 +	padSize.selectedSegmentTintColor = VDColor(182, 255, 60);
 +	[padSize setTitleTextAttributes:@{ NSForegroundColorAttributeName : VDColor(11, 13, 16) } forState:UIControlStateSelected];
@@ -1328,7 +1328,7 @@ index f7809a0..420a526 100644
 +
 +- (void)onPadSizeChanged:(UISegmentedControl*)sender
 +{
-+	[[NSUserDefaults standardUserDefaults] setInteger:sender.selectedSegmentIndex forKey:@"voiddeck.padSize"];
++	[[NSUserDefaults standardUserDefaults] setInteger:sender.selectedSegmentIndex forKey:@"hush.padSize"];
 +}
 +
 +static UIColor* VDColor(int r, int g, int b)
@@ -1336,7 +1336,7 @@ index f7809a0..420a526 100644
 +	return [UIColor colorWithRed:r / 255.0 green:g / 255.0 blue:b / 255.0 alpha:1];
 +}
 +
-+- (void)applyVoidDeckTheme
++- (void)applyHushTheme
 +{
 +	self.overrideUserInterfaceStyle = UIUserInterfaceStyleDark;
 +	self.tableView.backgroundColor = VDColor(11, 13, 16);
@@ -1474,7 +1474,7 @@ index 8459772..1d6df93 100644
 +{
 +	using B = PS2::CControllerInfo;
 +	const CGFloat w = size.width, h = size.height;
-+	NSInteger sizeIdx = [[NSUserDefaults standardUserDefaults] objectForKey:@"voiddeck.padSize"] ? [[NSUserDefaults standardUserDefaults] integerForKey:@"voiddeck.padSize"] : 1;
++	NSInteger sizeIdx = [[NSUserDefaults standardUserDefaults] objectForKey:@"hush.padSize"] ? [[NSUserDefaults standardUserDefaults] integerForKey:@"hush.padSize"] : 1;
 +	const CGFloat sizeScale = sizeIdx == 0 ? 0.85 : (sizeIdx == 2 ? 1.2 : 1.0);
 +	const CGFloat u = MAX(30, MIN(MIN(h * 0.16, w * 0.07), 60)) * sizeScale;
 +	const CGFloat m = MAX(16, u * 0.5);

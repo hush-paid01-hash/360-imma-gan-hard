@@ -23,10 +23,10 @@ jobs:
   build-ios:
     runs-on: macos-latest
     steps:
-      - name: Checkout VOID DECK
+      - name: Checkout HUSH EMULATOR
         uses: actions/checkout@v4
         with:
-          path: voiddeck
+          path: hush
 
       - name: Checkout Play! core
         run: |
@@ -36,10 +36,10 @@ jobs:
           git submodule update --init --recursive
           git fetch --tags --force
 
-      - name: Apply VOID DECK patch
+      - name: Apply HUSH EMULATOR patch
         run: |
           cd Play-
-          git apply --whitespace=nowarn ../voiddeck/ios/void-deck-restyle.patch
+          git apply --whitespace=nowarn ../hush/ios/hush-emulator.patch
 
       - name: Install tools
         run: brew install dpkg
@@ -62,18 +62,18 @@ jobs:
         run: |
           cd Play-/build
           cmake --build . --config Release
-          codesign -s "-" Source/ui_ios/Release-iphoneos/Play.app
+          codesign --remove-signature Source/ui_ios/Release-iphoneos/Play.app
 
       - name: Package IPA
         run: |
           cd Play-
           mkdir -p Payload
-          rsync -a build/Source/ui_ios/Release-iphoneos/Play.app/* Payload/VoidDeck.app
-          cp ../voiddeck/ios/Play-LICENSE.txt Payload/VoidDeck.app/
-          zip -qr VoidDeck-3.2.1.ipa Payload
+          rsync -a build/Source/ui_ios/Release-iphoneos/Play.app/* Payload/HushEmulator.app
+          cp ../hush/ios/Play-LICENSE.txt Payload/HushEmulator.app/
+          zip -qr HushEmulator-5.0.0.ipa Payload
 
       - name: Upload IPA
         uses: actions/upload-artifact@v4
         with:
-          name: VoidDeck-3.2.1-ipa
-          path: Play-/VoidDeck-3.2.1.ipa
+          name: HushEmulator-5.0.0-ipa
+          path: Play-/HushEmulator-5.0.0.ipa

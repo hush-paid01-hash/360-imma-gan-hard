@@ -1,4 +1,4 @@
-"""Custom 'Void Deck' frontend: dark carbon + neon-lime card list."""
+"""Custom 'Hush Emulator' frontend: dark carbon + neon-lime card list."""
 import json
 import tkinter as tk
 from pathlib import Path
@@ -6,20 +6,20 @@ from tkinter import filedialog, messagebox
 
 from launcher import engine
 
-CFG = Path.home() / ".void_deck.json"
+CFG = Path.home() / ".hush_emulator.json"
 BG, CARD, ACCENT, FG, DIM = "#0b0d10", "#161a20", "#b6ff3c", "#e8ecf1", "#6b7480"
 
 
 class App(tk.Tk):
     def __init__(self):
         super().__init__()
-        self.title("VOID DECK")
+        self.title("HUSH EMULATOR")
         self.geometry("820x560")
         self.configure(bg=BG)
         self.cfg = json.loads(CFG.read_text()) if CFG.exists() else {}
         self.games: list[Path] = []
 
-        tk.Label(self, text="VOID//DECK", bg=BG, fg=ACCENT,
+        tk.Label(self, text="HUSH EMULATOR", bg=BG, fg=ACCENT,
                  font=("Courier", 26, "bold")).pack(anchor="w", padx=20, pady=(16, 0))
         self.status = tk.Label(self, bg=BG, fg=DIM, font=("Courier", 10))
         self.status.pack(anchor="w", padx=20)
