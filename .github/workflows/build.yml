@@ -1,0 +1,79 @@
+name: Build
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+env:
+  PLAY_REF: 1f27232772e484bfb79364b751b84f41f4c87481
+  VULKAN_SDK_VERSION: '1.4.309.0'
+
+jobs:
+  launcher-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install pytest
+      - run: python -m pytest tests/test_launcher.py -q
+
+  build-ios:
+    runs-on: macos-latest
+    steps:
+      - name: Checkout VOID DECK
+        uses: actions/checkout@v4
+        with:
+          path: voiddeck
+
+      - name: Checkout Play! core
+        run: |
+          git clone https://github.com/jpd002/Play-.git Play-
+          cd Play-
+          git checkout "$PLAY_REF"
+          git submodule update --init --recursive
+          git fetch --tags --force
+
+      - name: Apply VOID DECK patch
+        run: |
+          cd Play-
+          git apply --whitespace=nowarn ../voiddeck/ios/void-deck-restyle.patch
+
+      - name: Install tools
+        run: brew install dpkg
+
+      - name: Install Vulkan SDK
+        run: |
+          cd "$RUNNER_WORKSPACE"
+          curl -L --show-error --output vulkansdk.zip "https://sdk.lunarg.com/sdk/download/${VULKAN_SDK_VERSION}/mac/vulkansdk-macos-${VULKAN_SDK_VERSION}.zip?Human=true"
+          unzip -q vulkansdk.zip
+          sudo ./InstallVulkan-${VULKAN_SDK_VERSION}.app/Contents/MacOS/InstallVulkan-${VULKAN_SDK_VERSION} in --al --c com.lunarg.vulkan.ios
+          echo "VULKAN_SDK=${HOME}/VulkanSDK/${VULKAN_SDK_VERSION}/iOS" >> "$GITHUB_ENV"
+
+      - name: Configure
+        run: |
+          cd Play-
+          mkdir build && cd build
+          cmake .. -G"Xcode" -DCMAKE_TOOLCHAIN_FILE=../deps/Dependencies/cmake-ios/ios.cmake -DTARGET_IOS=ON -DCMAKE_PREFIX_PATH=$VULKAN_SDK
+
+      - name: Build
+        run: |
+          cd Play-/build
+          cmake --build . --config Release
+          codesign -s "-" Source/ui_ios/Release-iphoneos/Play.app
+
+      - name: Package IPA
+        run: |
+          cd Play-
+          mkdir -p Payload
+          rsync -a build/Source/ui_ios/Release-iphoneos/Play.app/* Payload/VoidDeck.app
+          cp ../voiddeck/ios/Play-LICENSE.txt Payload/VoidDeck.app/
+          zip -qr VoidDeck-3.2.1.ipa Payload
+
+      - name: Upload IPA
+        uses: actions/upload-artifact@v4
+        with:
+          name: VoidDeck-3.2.1-ipa
+          path: Play-/VoidDeck-3.2.1.ipa
