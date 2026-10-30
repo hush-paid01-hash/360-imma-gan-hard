@@ -17,3 +17,5 @@ On a Mac with Xcode:
 3. Download the `HushEmulator-5.0.0.ipa` artifact from the Actions run and sign/install it with ESign (the IPA is unsigned; ESign signs it with your certificate). JIT is still required for speed.
 
 The Play! core emulates the BIOS (HLE), so no BIOS file is required to run games. Play!'s BSD-2 license is saved as `ios/Play-LICENSE.txt`; ship it with any copy you distribute.
+
+Icon: `ios/icon/make_icon.py` generates the Hush Emulator icon (`hush-icon-1024.png` plus the 180px `icon@2x.png` baked into the patch). Re-run it with Pillow to tweak the design.
