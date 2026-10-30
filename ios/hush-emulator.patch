@@ -110,10 +110,61 @@ index 1a36a6c..4d24656 100644
  		XCODE_ATTRIBUTE_TARGETED_DEVICE_FAMILY "1,2"
  		RESOURCE "${OSX_RES}"
 diff --git a/Source/ui_ios/CoverViewController.mm b/Source/ui_ios/CoverViewController.mm
-index 4b6da50..cb95359 100644
+index 4b6da50..ef21975 100644
 --- a/Source/ui_ios/CoverViewController.mm
 +++ b/Source/ui_ios/CoverViewController.mm
-@@ -29,8 +29,11 @@ static bool IsJitAvailable()
+@@ -9,8 +9,50 @@
+ #import "CoverViewCell.h"
+ #import "AltServerJitService.h"
+ 
++extern "C" int csops(pid_t pid, unsigned int ops, void* useraddr, size_t usersize);
++
++// True once any debugger (Xcode, AltServer, StikDebug...) has attached to this process.
++static bool IsDebuggerAttached()
++{
++	const unsigned int CS_OPS_STATUS = 0;
++	const unsigned int CS_DEBUGGED = 0x10000000;
++	unsigned int flags = 0;
++	return csops(getpid(), CS_OPS_STATUS, &flags, sizeof(flags)) == 0 && (flags & CS_DEBUGGED);
++}
++
++static bool IsStikDebugInstalled()
++{
++	return [[UIApplication sharedApplication] canOpenURL:[NSURL URLWithString:@"stikdebug://"]];
++}
++
++// Asks StikDebug to attach to this process, then calls done(true) once JIT is active or done(false) on timeout.
++static void RequestStikDebugJit(void (^done)(bool))
++{
++	NSURLComponents* c = [[NSURLComponents alloc] init];
++	c.scheme = @"stikdebug";
++	c.host = @"enable-jit";
++	c.queryItems = @[
++		[NSURLQueryItem queryItemWithName:@"bundle-id" value:[[NSBundle mainBundle] bundleIdentifier]],
++		[NSURLQueryItem queryItemWithName:@"pid" value:[NSString stringWithFormat:@"%d", getpid()]],
++	];
++	[[UIApplication sharedApplication] openURL:c.URL options:@{} completionHandler:nil];
++
++	dispatch_async(dispatch_get_global_queue(QOS_CLASS_UTILITY, 0), ^{
++	  bool ok = false;
++	  for(int i = 0; i < 60 && !ok; i++)
++	  {
++		  [NSThread sleepForTimeInterval:0.5];
++		  ok = IsDebuggerAttached();
++	  }
++	  dispatch_async(dispatch_get_main_queue(), ^{
++		done(ok);
++	  });
++	});
++}
++
+ static bool IsJitAvailable()
+ {
++	if(IsDebuggerAttached()) return true;
+ 	//If ppid != 1, it means we're being run in the debugger
+ 	if(getppid() != 1) return true;
+ 	if([[AltServerJitService sharedAltServerJitService] jitEnabled])
+@@ -29,8 +71,11 @@ static bool IsJitAvailable()
  	return false;
  }
  
@@ -127,7 +178,7 @@ index 4b6da50..cb95359 100644
  @end
  
  @implementation CoverViewController
-@@ -101,20 +104,85 @@ static NSString* const reuseIdentifier = @"coverCell";
+@@ -101,20 +146,85 @@ static NSString* const reuseIdentifier = @"coverCell";
  	  //Done
  	  dispatch_async(dispatch_get_main_queue(), ^{
  		[alert dismissViewControllerAnimated:YES completion:nil];
@@ -214,7 +265,7 @@ index 4b6da50..cb95359 100644
  	if(@available(iOS 11.0, *))
  	{
  		self.collectionView.contentInsetAdjustmentBehavior = UIScrollViewContentInsetAdjustmentAlways;
-@@ -132,6 +200,26 @@ static NSString* const reuseIdentifier = @"coverCell";
+@@ -132,6 +242,26 @@ static NSString* const reuseIdentifier = @"coverCell";
  	[super viewDidUnload];
  }
  
@@ -241,7 +292,7 @@ index 4b6da50..cb95359 100644
  - (void)willAnimateRotationToInterfaceOrientation:(UIInterfaceOrientation)toInterfaceOrientation duration:(NSTimeInterval)duration
  {
  	// resize your layers based on the view’s new bounds
-@@ -164,17 +252,48 @@ static NSString* const reuseIdentifier = @"coverCell";
+@@ -164,17 +294,48 @@ static NSString* const reuseIdentifier = @"coverCell";
  
  - (NSInteger)collectionView:(UICollectionView*)collectionView numberOfItemsInSection:(NSInteger)section
  {
@@ -293,7 +344,7 @@ index 4b6da50..cb95359 100644
  
  	if(!bootable.coverUrl.empty())
  	{
-@@ -187,6 +306,24 @@ static NSString* const reuseIdentifier = @"coverCell";
+@@ -187,11 +348,50 @@ static NSString* const reuseIdentifier = @"coverCell";
  
  #pragma mark <UICollectionViewDelegate>
  
@@ -318,7 +369,33 @@ index 4b6da50..cb95359 100644
  - (BOOL)shouldPerformSegueWithIdentifier:(NSString*)identifier sender:(id)sender
  {
  	if([identifier isEqualToString:@"showEmulator"] && !IsJitAvailable())
-@@ -228,7 +365,7 @@ static NSString* const reuseIdentifier = @"coverCell";
+ 	{
+ 		UIAlertController* alert = [UIAlertController alertControllerWithTitle:@"JIT unavailable" message:@"JIT doesn't seem to be available at the moment. If JIT is not available, the emulator will crash. Do you wish to continue?" preferredStyle:UIAlertControllerStyleAlert];
++		if(IsStikDebugInstalled())
++		{
++			UIAlertAction* stikAction = [UIAlertAction
++			    actionWithTitle:@"Enable with StikDebug"
++			              style:UIAlertActionStyleDefault
++			            handler:^(UIAlertAction*) {
++				          RequestStikDebugJit(^(bool ok) {
++					        if(ok)
++					        {
++						        [self performSegueWithIdentifier:@"showEmulator" sender:sender];
++					        }
++					        else
++					        {
++						        UIAlertController* fail = [UIAlertController alertControllerWithTitle:@"StikDebug" message:@"JIT was not enabled. Make sure LocalDevVPN is on and StikDebug has a valid pairing file, then try again." preferredStyle:UIAlertControllerStyleAlert];
++						        [fail addAction:[UIAlertAction actionWithTitle:@"OK" style:UIAlertActionStyleCancel handler:nil]];
++						        [self presentViewController:fail animated:YES completion:nil];
++					        }
++				          });
++			            }];
++			[alert addAction:stikAction];
++		}
+ 		{
+ 			UIAlertAction* continueAction = [UIAlertAction
+ 			    actionWithTitle:@"Continue"
+@@ -228,7 +428,7 @@ static NSString* const reuseIdentifier = @"coverCell";
  	if([segue.identifier isEqualToString:@"showEmulator"])
  	{
  		NSIndexPath* indexPath = [[self.collectionView indexPathsForSelectedItems] objectAtIndex:0];
@@ -328,7 +405,7 @@ index 4b6da50..cb95359 100644
  		EmulatorViewController* emulatorViewController = segue.destinationViewController;
  		emulatorViewController.bootablePath = [NSString stringWithUTF8String:bootable.path.native().c_str()];
 diff --git a/Source/ui_ios/Info.plist.in b/Source/ui_ios/Info.plist.in
-index 6f8edd2..58ebf98 100644
+index 6f8edd2..cdbb260 100644
 --- a/Source/ui_ios/Info.plist.in
 +++ b/Source/ui_ios/Info.plist.in
 @@ -11,7 +11,7 @@
@@ -340,12 +417,16 @@ index 6f8edd2..58ebf98 100644
  	<key>CFBundlePackageType</key>
  	<string>APPL</string>
  	<key>CFBundleShortVersionString</key>
-@@ -60,7 +60,7 @@
+@@ -60,7 +60,11 @@
  		<string>_altserver._tcp</string>
  	</array>
  	<key>NSLocalNetworkUsageDescription</key>
 -	<string>Play! uses the local network to find and communicate with AltServer.</string>
 +	<string>HUSH EMULATOR uses the local network to find and communicate with AltServer.</string>
++	<key>LSApplicationQueriesSchemes</key>
++	<array>
++		<string>stikdebug</string>
++	</array>
  	<key>ALTDeviceID</key>
  	<string></string>
  </dict>
