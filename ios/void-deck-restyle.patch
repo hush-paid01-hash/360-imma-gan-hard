@@ -1,0 +1,1529 @@
+diff --git a/Source/ui_ios/BackgroundLayer.m b/Source/ui_ios/BackgroundLayer.m
+index db61330..e51122e 100644
+--- a/Source/ui_ios/BackgroundLayer.m
++++ b/Source/ui_ios/BackgroundLayer.m
+@@ -10,12 +10,12 @@
+ 
+ @implementation BackgroundLayer
+ 
+-//Blue gradient background
++//Void Deck carbon gradient background
+ + (CAGradientLayer*)blueGradient
+ {
+ 
+-	UIColor* colorOne = [UIColor colorWithRed:(21 / 255.0) green:(169 / 255.0) blue:(207 / 255.0) alpha:1.0];
+-	UIColor* colorTwo = [UIColor colorWithRed:(69 / 255.0) green:(67 / 255.0) blue:(142 / 255.0) alpha:1.0];
++	UIColor* colorOne = [UIColor colorWithRed:(11 / 255.0) green:(13 / 255.0) blue:(16 / 255.0) alpha:1.0];
++	UIColor* colorTwo = [UIColor colorWithRed:(22 / 255.0) green:(26 / 255.0) blue:(32 / 255.0) alpha:1.0];
+ 
+ 	NSArray* colors = [NSArray arrayWithObjects:(id)colorOne.CGColor, colorTwo.CGColor, nil];
+ 	NSNumber* stopOne = [NSNumber numberWithFloat:0.0];
+diff --git a/Source/ui_ios/Base.lproj/LaunchScreen.xib b/Source/ui_ios/Base.lproj/LaunchScreen.xib
+index 53ffebe..526e344 100644
+--- a/Source/ui_ios/Base.lproj/LaunchScreen.xib
++++ b/Source/ui_ios/Base.lproj/LaunchScreen.xib
+@@ -16,20 +16,20 @@
+             <rect key="frame" x="0.0" y="0.0" width="480" height="480"/>
+             <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
+             <subviews>
+-                <label opaque="NO" clipsSubviews="YES" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="  Copyright (c) 2015 Virtual Applications. All rights reserved." textAlignment="center" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" minimumFontSize="9" translatesAutoresizingMaskIntoConstraints="NO" id="8ie-xW-0ye">
++                <label opaque="NO" clipsSubviews="YES" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="" textAlignment="center" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" minimumFontSize="9" translatesAutoresizingMaskIntoConstraints="NO" id="8ie-xW-0ye">
+                     <rect key="frame" x="20" y="439" width="441" height="21"/>
+                     <fontDescription key="fontDescription" type="system" pointSize="17"/>
+                     <color key="textColor" cocoaTouchSystemColor="darkTextColor"/>
+                     <nil key="highlightedColor"/>
+                 </label>
+-                <label opaque="NO" clipsSubviews="YES" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Play!" textAlignment="center" lineBreakMode="middleTruncation" baselineAdjustment="alignBaselines" minimumFontSize="18" translatesAutoresizingMaskIntoConstraints="NO" id="kId-c2-rCX">
++                <label opaque="NO" clipsSubviews="YES" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="VOID//DECK" textAlignment="center" lineBreakMode="middleTruncation" baselineAdjustment="alignBaselines" minimumFontSize="18" translatesAutoresizingMaskIntoConstraints="NO" id="kId-c2-rCX">
+                     <rect key="frame" x="20" y="140" width="441" height="43"/>
+                     <fontDescription key="fontDescription" type="boldSystem" pointSize="36"/>
+-                    <color key="textColor" cocoaTouchSystemColor="darkTextColor"/>
++                    <color key="textColor" red="0.714" green="1" blue="0.235" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+                     <nil key="highlightedColor"/>
+                 </label>
+             </subviews>
+-            <color key="backgroundColor" red="1" green="1" blue="1" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
++            <color key="backgroundColor" red="0.043" green="0.051" blue="0.063" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+             <constraints>
+                 <constraint firstItem="kId-c2-rCX" firstAttribute="centerY" secondItem="iN0-l3-epB" secondAttribute="bottom" multiplier="1/3" constant="1" id="5cJ-9S-tgC"/>
+                 <constraint firstAttribute="centerX" secondItem="kId-c2-rCX" secondAttribute="centerX" id="Koa-jz-hwk"/>
+diff --git a/Source/ui_ios/Base.lproj/Main.storyboard b/Source/ui_ios/Base.lproj/Main.storyboard
+index 54e499c..db9fccc 100644
+--- a/Source/ui_ios/Base.lproj/Main.storyboard
++++ b/Source/ui_ios/Base.lproj/Main.storyboard
+@@ -53,7 +53,7 @@
+                             <outlet property="delegate" destination="1v5-6a-quN" id="7HN-Qm-fo9"/>
+                         </connections>
+                     </collectionView>
+-                    <navigationItem key="navigationItem" title="Games" id="ygK-SU-mCZ">
++                    <navigationItem key="navigationItem" title="LIBRARY" id="ygK-SU-mCZ">
+                         <barButtonItem key="leftBarButtonItem" title="Exit" id="asm-nF-8nd" userLabel="Exit">
+                             <connections>
+                                 <action selector="onExit:" destination="1v5-6a-quN" id="5d9-KI-dW0"/>
+diff --git a/Source/ui_ios/CMakeLists.txt b/Source/ui_ios/CMakeLists.txt
+index 1a36a6c..292b09d 100644
+--- a/Source/ui_ios/CMakeLists.txt
++++ b/Source/ui_ios/CMakeLists.txt
+@@ -95,6 +95,7 @@ set(OSX_SOURCES
+ 	AppDelegate.mm
+ 	BackgroundLayer.m
+ 	CoverViewCell.m
++	PadSkin.m
+ 	CoverViewController.mm
+ 	DebuggerSimulator.cpp
+ 	EmulatorViewController.mm
+@@ -116,6 +117,7 @@ set(OSX_HEADERS
+ 	AppDelegate.h
+ 	BackgroundLayer.h
+ 	CoverViewCell.h
++	PadSkin.h
+ 	CoverViewController.h
+ 	DebuggerSimulator.h
+ 	EmulatorViewController.h
+@@ -166,7 +168,7 @@ target_link_libraries(Play ${QUARTZCORE_LIBRARY})
+ target_link_libraries(Play ${IMAGEIO_LIBRARY})
+ target_link_libraries(Play ${UI_IOS_PROJECT_LIBS} "-ObjC -lsqlite3 -framework OpenAL")
+ 
+-target_compile_definitions(Play PRIVATE ${UI_IOS_DEFINITIONS_LIST})
++target_compile_definitions(Play PRIVATE ${UI_IOS_DEFINITIONS_LIST} VOIDDECK_VERSION="3.2.1")
+ 
+ # Set a custom plist file for the app bundle
+ # NOTE: for these values to be used Info.plist has to be edited
+@@ -175,13 +177,13 @@ string(TIMESTAMP DATE "%Y-%m-%d")
+ set_target_properties(
+ 	Play
+ 	PROPERTIES
+-		MACOSX_BUNDLE_INFO_STRING "${PROJECT_NAME}"
+-		MACOSX_BUNDLE_GUI_IDENTIFIER "com.virtualapplications.play"
+-		MACOSX_BUNDLE_LONG_VERSION_STRING "${PROJECT_NAME} Version ${PROJECT_Version}"
+-		MACOSX_BUNDLE_BUNDLE_NAME ${PROJECT_NAME}
+-		MACOSX_BUNDLE_SHORT_VERSION_STRING "${PROJECT_Version}"
++		MACOSX_BUNDLE_INFO_STRING "VOID DECK"
++		MACOSX_BUNDLE_GUI_IDENTIFIER "com.voiddeck.app"
++		MACOSX_BUNDLE_LONG_VERSION_STRING "VOID DECK Version 3.2.1"
++		MACOSX_BUNDLE_BUNDLE_NAME "VOID DECK"
++		MACOSX_BUNDLE_SHORT_VERSION_STRING "3.2.1"
+ 		MACOSX_BUNDLE_BUNDLE_VERSION ${DATE}
+-		MACOSX_BUNDLE_COPYRIGHT "© Virtual Applications, 2017"
++		MACOSX_BUNDLE_COPYRIGHT "VOID DECK 3.2.1"
+ 		MACOSX_BUNDLE_INFO_PLIST "${CMAKE_CURRENT_SOURCE_DIR}/Info.plist.in"
+ 		XCODE_ATTRIBUTE_TARGETED_DEVICE_FAMILY "1,2"
+ 		RESOURCE "${OSX_RES}"
+diff --git a/Source/ui_ios/CoverViewController.mm b/Source/ui_ios/CoverViewController.mm
+index 4b6da50..6bded5c 100644
+--- a/Source/ui_ios/CoverViewController.mm
++++ b/Source/ui_ios/CoverViewController.mm
+@@ -29,8 +29,11 @@ static bool IsJitAvailable()
+ 	return false;
+ }
+ 
+-@interface CoverViewController ()
+-
++@interface CoverViewController () <UISearchResultsUpdating>
++{
++	NSMutableArray<NSNumber*>* _visible;
++	NSString* _query;
++}
+ @end
+ 
+ @implementation CoverViewController
+@@ -101,20 +104,85 @@ static NSString* const reuseIdentifier = @"coverCell";
+ 	  //Done
+ 	  dispatch_async(dispatch_get_main_queue(), ^{
+ 		[alert dismissViewControllerAnimated:YES completion:nil];
+-		[self.collectionView reloadData];
++		[self refreshVisible];
+ 	  });
+ 	});
+ }
+ 
++static NSString* const FavoritesKey = @"voiddeck.favorites";
++
++static NSString* PathKey(const BootablesDb::Bootable& b)
++{
++	return [NSString stringWithUTF8String:b.path.native().c_str()];
++}
++
++static NSSet<NSString*>* LoadFavorites()
++{
++	return [NSSet setWithArray:[[NSUserDefaults standardUserDefaults] arrayForKey:FavoritesKey] ?: @[]];
++}
++
++// Scope 0 = A-Z (favorites first), 1 = recently played, 2 = favorites only.
++- (void)refreshVisible
++{
++	NSInteger scope = self.navigationItem.searchController.searchBar.selectedScopeButtonIndex;
++	NSSet<NSString*>* favorites = LoadFavorites();
++	_visible = [NSMutableArray array];
++	if(_bootables)
++	{
++		for(NSUInteger i = 0; i < _bootables->size(); i++)
++		{
++			NSString* title = [NSString stringWithUTF8String:(*_bootables)[i].title.c_str()];
++			bool fav = [favorites containsObject:PathKey((*_bootables)[i])];
++			if(scope == 2 && !fav) continue;
++			if(scope == 1 && (*_bootables)[i].lastBootedTime == 0) continue;
++			if([_query length] == 0 || [title rangeOfString:_query options:NSCaseInsensitiveSearch].location != NSNotFound)
++			{
++				[_visible addObject:@(i)];
++			}
++		}
++		[_visible sortUsingComparator:^NSComparisonResult(NSNumber* a, NSNumber* b) {
++		  const auto& ba = (*self->_bootables)[a.unsignedIntegerValue];
++		  const auto& bb = (*self->_bootables)[b.unsignedIntegerValue];
++		  if(scope == 1 && ba.lastBootedTime != bb.lastBootedTime)
++			  return ba.lastBootedTime > bb.lastBootedTime ? NSOrderedAscending : NSOrderedDescending;
++		  bool fa = [favorites containsObject:PathKey(ba)], fb = [favorites containsObject:PathKey(bb)];
++		  if(scope == 0 && fa != fb) return fa ? NSOrderedAscending : NSOrderedDescending;
++		  NSString* ta = [NSString stringWithUTF8String:(*self->_bootables)[a.unsignedIntegerValue].title.c_str()];
++		  NSString* tb = [NSString stringWithUTF8String:(*self->_bootables)[b.unsignedIntegerValue].title.c_str()];
++		  return [ta localizedCaseInsensitiveCompare:tb];
++		}];
++	}
++	[self.collectionView reloadData];
++}
++
++- (void)updateSearchResultsForSearchController:(UISearchController*)searchController
++{
++	_query = searchController.searchBar.text;
++	[self refreshVisible];
++}
++
+ - (void)viewDidLoad
+ {
+ 	[super viewDidLoad];
+ 
++	UISearchController* search = [[UISearchController alloc] initWithSearchResultsController:nil];
++	search.searchResultsUpdater = self;
++	search.obscuresBackgroundDuringPresentation = NO;
++	search.searchBar.placeholder = @"Search library";
++	search.searchBar.tintColor = [UIColor colorWithRed:182 / 255.0 green:1 blue:60 / 255.0 alpha:1];
++	search.searchBar.barStyle = UIBarStyleBlack;
++	search.searchBar.scopeButtonTitles = @[ @"A–Z", @"Recent", @"★ Favorites" ];
++	self.navigationItem.searchController = search;
++	self.definesPresentationContext = YES;
++
+ 	CAGradientLayer* bgLayer = [BackgroundLayer blueGradient];
+ 	bgLayer.frame = self.view.bounds;
+ 	[self.view.layer insertSublayer:bgLayer atIndex:0];
+ 
+ 	self.collectionView.allowsMultipleSelection = NO;
++	self.collectionView.backgroundColor = [UIColor clearColor];
++	self.collectionView.showsVerticalScrollIndicator = NO;
++	[self applyGridLayout:self.view.bounds.size];
+ 	if(@available(iOS 11.0, *))
+ 	{
+ 		self.collectionView.contentInsetAdjustmentBehavior = UIScrollViewContentInsetAdjustmentAlways;
+@@ -132,6 +200,26 @@ static NSString* const reuseIdentifier = @"coverCell";
+ 	[super viewDidUnload];
+ }
+ 
++// Adaptive poster grid: ~2:3 box-art cards, 2-5 columns depending on width.
++- (void)applyGridLayout:(CGSize)size
++{
++	auto layout = (UICollectionViewFlowLayout*)self.collectionView.collectionViewLayout;
++	const CGFloat spacing = 18, inset = 20;
++	NSInteger columns = MAX(2, (NSInteger)floor((size.width - inset * 2 + spacing) / (150 + spacing)));
++	CGFloat width = floor((size.width - inset * 2 - spacing * (columns - 1)) / columns);
++	layout.itemSize = CGSizeMake(width, ceil(width * 1.42));
++	layout.minimumInteritemSpacing = spacing;
++	layout.minimumLineSpacing = spacing + 4;
++	layout.sectionInset = UIEdgeInsetsMake(16, inset, 24, inset);
++}
++
++- (void)viewWillTransitionToSize:(CGSize)size withTransitionCoordinator:(id<UIViewControllerTransitionCoordinator>)coordinator
++{
++	[super viewWillTransitionToSize:size withTransitionCoordinator:coordinator];
++	[self applyGridLayout:size];
++	[self.collectionView.collectionViewLayout invalidateLayout];
++}
++
+ - (void)willAnimateRotationToInterfaceOrientation:(UIInterfaceOrientation)toInterfaceOrientation duration:(NSTimeInterval)duration
+ {
+ 	// resize your layers based on the view’s new bounds
+@@ -164,17 +252,48 @@ static NSString* const reuseIdentifier = @"coverCell";
+ 
+ - (NSInteger)collectionView:(UICollectionView*)collectionView numberOfItemsInSection:(NSInteger)section
+ {
+-	return _bootables ? _bootables->size() : 0;
++	return _visible.count;
+ }
+ 
+ - (UICollectionViewCell*)collectionView:(UICollectionView*)collectionView cellForItemAtIndexPath:(NSIndexPath*)indexPath
+ {
+ 	CoverViewCell* cell = (CoverViewCell*)[collectionView dequeueReusableCellWithReuseIdentifier:reuseIdentifier forIndexPath:indexPath];
+ 
+-	auto bootable = (*_bootables)[indexPath.row];
++	auto bootable = (*_bootables)[_visible[indexPath.row].unsignedIntegerValue];
+ 	UIImage* placeholder = [UIImage imageNamed:@"boxart.png"];
+ 	cell.nameLabel.text = [NSString stringWithUTF8String:bootable.title.c_str()];
+-	cell.backgroundView = [[UIImageView alloc] initWithImage:placeholder];
++	UIImageView* art = [[UIImageView alloc] initWithImage:placeholder];
++	art.contentMode = UIViewContentModeScaleAspectFill;
++	cell.backgroundView = art;
++	cell.contentView.layer.cornerRadius = 14;
++	cell.contentView.layer.masksToBounds = YES;
++	cell.layer.cornerRadius = 14;
++	cell.layer.masksToBounds = NO;
++	cell.layer.shadowColor = [UIColor blackColor].CGColor;
++	cell.layer.shadowOpacity = 0.6;
++	cell.layer.shadowRadius = 10;
++	cell.layer.shadowOffset = CGSizeMake(0, 6);
++	cell.backgroundView.layer.cornerRadius = 14;
++	cell.backgroundView.layer.masksToBounds = YES;
++	cell.backgroundView.layer.borderWidth = 1;
++	cell.backgroundView.layer.borderColor = [UIColor colorWithWhite:1 alpha:0.14].CGColor;
++	UILabel* star = (UILabel*)[cell.contentView viewWithTag:9001];
++	if(!star)
++	{
++		star = [[UILabel alloc] initWithFrame:CGRectMake(6, 6, 26, 26)];
++		star.tag = 9001;
++		star.text = @"★";
++		star.textAlignment = NSTextAlignmentCenter;
++		star.textColor = [UIColor colorWithRed:182 / 255.0 green:1 blue:60 / 255.0 alpha:1];
++		star.backgroundColor = [UIColor colorWithWhite:0 alpha:0.6];
++		star.layer.cornerRadius = 13;
++		star.layer.masksToBounds = YES;
++		[cell.contentView addSubview:star];
++	}
++	star.hidden = ![LoadFavorites() containsObject:PathKey(bootable)];
++	cell.nameLabel.font = [UIFont systemFontOfSize:12 weight:UIFontWeightSemibold];
++	cell.nameLabel.textColor = [UIColor whiteColor];
++	cell.nameLabel.backgroundColor = [UIColor colorWithRed:11 / 255.0 green:13 / 255.0 blue:16 / 255.0 alpha:0.78];
+ 
+ 	if(!bootable.coverUrl.empty())
+ 	{
+@@ -187,6 +306,24 @@ static NSString* const reuseIdentifier = @"coverCell";
+ 
+ #pragma mark <UICollectionViewDelegate>
+ 
++- (UIContextMenuConfiguration*)collectionView:(UICollectionView*)collectionView contextMenuConfigurationForItemAtIndexPath:(NSIndexPath*)indexPath point:(CGPoint)point
++{
++	NSString* key = PathKey((*_bootables)[_visible[indexPath.row].unsignedIntegerValue]);
++	bool isFav = [LoadFavorites() containsObject:key];
++	return [UIContextMenuConfiguration configurationWithIdentifier:nil previewProvider:nil actionProvider:^UIMenu*(NSArray<UIMenuElement*>*) {
++	  UIAction* toggle = [UIAction actionWithTitle:isFav ? @"Remove from Favorites" : @"Add to Favorites"
++	                                         image:[UIImage systemImageNamed:isFav ? @"star.slash" : @"star"]
++	                                    identifier:nil
++	                                       handler:^(UIAction*) {
++		                                     NSMutableSet* favs = [LoadFavorites() mutableCopy];
++		                                     if(isFav) [favs removeObject:key]; else [favs addObject:key];
++		                                     [[NSUserDefaults standardUserDefaults] setObject:[favs allObjects] forKey:FavoritesKey];
++		                                     [self refreshVisible];
++	                                       }];
++	  return [UIMenu menuWithChildren:@[ toggle ]];
++	}];
++}
++
+ - (BOOL)shouldPerformSegueWithIdentifier:(NSString*)identifier sender:(id)sender
+ {
+ 	if([identifier isEqualToString:@"showEmulator"] && !IsJitAvailable())
+@@ -228,7 +365,7 @@ static NSString* const reuseIdentifier = @"coverCell";
+ 	if([segue.identifier isEqualToString:@"showEmulator"])
+ 	{
+ 		NSIndexPath* indexPath = [[self.collectionView indexPathsForSelectedItems] objectAtIndex:0];
+-		auto bootable = (*_bootables)[indexPath.row];
++		auto bootable = (*_bootables)[_visible[indexPath.row].unsignedIntegerValue];
+ 		BootablesDb::CClient::GetInstance().SetLastBootedTime(bootable.path, time(nullptr));
+ 		EmulatorViewController* emulatorViewController = segue.destinationViewController;
+ 		emulatorViewController.bootablePath = [NSString stringWithUTF8String:bootable.path.native().c_str()];
+diff --git a/Source/ui_ios/Info.plist.in b/Source/ui_ios/Info.plist.in
+index 6f8edd2..07f90d1 100644
+--- a/Source/ui_ios/Info.plist.in
++++ b/Source/ui_ios/Info.plist.in
+@@ -11,7 +11,7 @@
+ 	<key>CFBundleInfoDictionaryVersion</key>
+ 	<string>6.0</string>
+ 	<key>CFBundleName</key>
+-	<string>Play!</string>
++	<string>VOID DECK</string>
+ 	<key>CFBundlePackageType</key>
+ 	<string>APPL</string>
+ 	<key>CFBundleShortVersionString</key>
+@@ -60,7 +60,7 @@
+ 		<string>_altserver._tcp</string>
+ 	</array>
+ 	<key>NSLocalNetworkUsageDescription</key>
+-	<string>Play! uses the local network to find and communicate with AltServer.</string>
++	<string>VOID DECK uses the local network to find and communicate with AltServer.</string>
+ 	<key>ALTDeviceID</key>
+ 	<string></string>
+ </dict>
+diff --git a/Source/ui_ios/PadSkin.h b/Source/ui_ios/PadSkin.h
+new file mode 100644
+index 0000000..0228431
+--- /dev/null
++++ b/Source/ui_ios/PadSkin.h
+@@ -0,0 +1,8 @@
++#import <UIKit/UIKit.h>
++
++// Vector-drawn, DualShock-style skin for the virtual pad.
++@interface PadSkin : NSObject
+++ (void)drawKind:(NSString*)kind caption:(NSString*)caption inRect:(CGRect)rect pressed:(BOOL)pressed context:(CGContextRef)context;
+++ (void)drawStickBase:(CGRect)rect context:(CGContextRef)context;
+++ (void)drawStickCap:(CGRect)rect context:(CGContextRef)context;
++@end
+diff --git a/Source/ui_ios/PadSkin.m b/Source/ui_ios/PadSkin.m
+new file mode 100644
+index 0000000..64c1414
+--- /dev/null
++++ b/Source/ui_ios/PadSkin.m
+@@ -0,0 +1,179 @@
++#import "PadSkin.h"
++
++static UIColor* RGB(int r, int g, int b, CGFloat a)
++{
++	return [UIColor colorWithRed:r / 255.0 green:g / 255.0 blue:b / 255.0 alpha:a];
++}
++
++static void FillGradient(CGContextRef ctx, NSArray<UIColor*>* colors, CGPoint from, CGPoint to)
++{
++	NSMutableArray* cg = [NSMutableArray array];
++	for(UIColor* c in colors) [cg addObject:(id)c.CGColor];
++	CGColorSpaceRef space = CGColorSpaceCreateDeviceRGB();
++	CGGradientRef g = CGGradientCreateWithColors(space, (CFArrayRef)cg, NULL);
++	CGContextDrawLinearGradient(ctx, g, from, to, 0);
++	CGGradientRelease(g);
++	CGColorSpaceRelease(space);
++}
++
++static void FillRadial(CGContextRef ctx, NSArray<UIColor*>* colors, CGPoint center, CGFloat radius)
++{
++	NSMutableArray* cg = [NSMutableArray array];
++	for(UIColor* c in colors) [cg addObject:(id)c.CGColor];
++	CGColorSpaceRef space = CGColorSpaceCreateDeviceRGB();
++	CGGradientRef g = CGGradientCreateWithColors(space, (CFArrayRef)cg, NULL);
++	CGContextDrawRadialGradient(ctx, g, CGPointMake(center.x, center.y - radius * 0.3), 0, center, radius, kCGGradientDrawsAfterEndLocation);
++	CGGradientRelease(g);
++	CGColorSpaceRelease(space);
++}
++
++// Draws a glossy body (clipped path) with a soft drop shadow and rim light.
++static void DrawBody(CGContextRef ctx, UIBezierPath* path, BOOL pressed, BOOL radial)
++{
++	CGRect b = path.bounds;
++	CGContextSaveGState(ctx);
++	if(!pressed)
++	{
++		CGContextSetShadowWithColor(ctx, CGSizeMake(0, 3), 6, [UIColor colorWithWhite:0 alpha:0.55].CGColor);
++	}
++	[RGB(20, 22, 28, 0.92) setFill];
++	[path fill];
++	CGContextRestoreGState(ctx);
++
++	CGContextSaveGState(ctx);
++	[path addClip];
++	NSArray* tones = pressed ? @[ RGB(18, 20, 24, 0.95), RGB(40, 44, 54, 0.95) ]
++	                         : @[ RGB(78, 84, 98, 0.95), RGB(28, 31, 38, 0.95) ];
++	if(radial)
++		FillRadial(ctx, tones, CGPointMake(CGRectGetMidX(b), CGRectGetMidY(b)), b.size.width * 0.6);
++	else
++		FillGradient(ctx, tones, CGPointMake(0, CGRectGetMinY(b)), CGPointMake(0, CGRectGetMaxY(b)));
++	CGContextRestoreGState(ctx);
++
++	[RGB(255, 255, 255, pressed ? 0.10 : 0.28) setStroke];
++	path.lineWidth = 1;
++	[path stroke];
++}
++
++static void DrawGlyph(NSString* kind, CGRect r, UIColor* color)
++{
++	CGFloat s = r.size.width * 0.34;
++	CGPoint c = CGPointMake(CGRectGetMidX(r), CGRectGetMidY(r));
++	UIBezierPath* p = nil;
++	if([kind isEqualToString:@"circle"])
++		p = [UIBezierPath bezierPathWithOvalInRect:CGRectMake(c.x - s, c.y - s, s * 2, s * 2)];
++	else if([kind isEqualToString:@"square"])
++		p = [UIBezierPath bezierPathWithRect:CGRectMake(c.x - s * 0.9, c.y - s * 0.9, s * 1.8, s * 1.8)];
++	else if([kind isEqualToString:@"triangle"])
++	{
++		p = [UIBezierPath bezierPath];
++		[p moveToPoint:CGPointMake(c.x, c.y - s)];
++		[p addLineToPoint:CGPointMake(c.x + s * 1.05, c.y + s * 0.8)];
++		[p addLineToPoint:CGPointMake(c.x - s * 1.05, c.y + s * 0.8)];
++		[p closePath];
++	}
++	else
++	{
++		p = [UIBezierPath bezierPath];
++		[p moveToPoint:CGPointMake(c.x - s, c.y - s)];
++		[p addLineToPoint:CGPointMake(c.x + s, c.y + s)];
++		[p moveToPoint:CGPointMake(c.x + s, c.y - s)];
++		[p addLineToPoint:CGPointMake(c.x - s, c.y + s)];
++	}
++	p.lineWidth = MAX(2.0, r.size.width * 0.07);
++	p.lineCapStyle = kCGLineCapRound;
++	[color setStroke];
++	[p stroke];
++}
++
++static void DrawArrow(NSString* kind, CGRect r)
++{
++	CGPoint c = CGPointMake(CGRectGetMidX(r), CGRectGetMidY(r));
++	CGFloat s = MIN(r.size.width, r.size.height) * 0.22;
++	CGFloat dx = 0, dy = 0;
++	if([kind isEqualToString:@"up"]) dy = -1;
++	else if([kind isEqualToString:@"down"]) dy = 1;
++	else if([kind isEqualToString:@"left"]) dx = -1;
++	else dx = 1;
++	UIBezierPath* p = [UIBezierPath bezierPath];
++	[p moveToPoint:CGPointMake(c.x + dx * s, c.y + dy * s)];
++	[p addLineToPoint:CGPointMake(c.x - dx * s + dy * s, c.y - dy * s + dx * s)];
++	[p addLineToPoint:CGPointMake(c.x - dx * s - dy * s, c.y - dy * s - dx * s)];
++	[p closePath];
++	[RGB(210, 216, 228, 0.85) setFill];
++	[p fill];
++}
++
++@implementation PadSkin
++
+++ (void)drawKind:(NSString*)kind caption:(NSString*)caption inRect:(CGRect)rect pressed:(BOOL)pressed context:(CGContextRef)ctx
++{
++	if([kind isEqualToString:@"cross"] || [kind isEqualToString:@"circle"] ||
++	   [kind isEqualToString:@"square"] || [kind isEqualToString:@"triangle"])
++	{
++		CGFloat d = MIN(rect.size.width, rect.size.height) - 8;
++		CGRect face = CGRectMake(CGRectGetMidX(rect) - d / 2, CGRectGetMidY(rect) - d / 2, d, d);
++		if(pressed) face = CGRectInset(face, 2, 2);
++		DrawBody(ctx, [UIBezierPath bezierPathWithOvalInRect:face], pressed, YES);
++		UIColor* col = [kind isEqualToString:@"triangle"] ? RGB(64, 224, 160, 1)
++		             : [kind isEqualToString:@"circle"]   ? RGB(255, 84, 96, 1)
++		             : [kind isEqualToString:@"cross"]    ? RGB(96, 160, 255, 1)
++		                                                  : RGB(255, 150, 210, 1);
++		DrawGlyph(kind, face, col);
++	}
++	else if([kind isEqualToString:@"up"] || [kind isEqualToString:@"down"] ||
++	        [kind isEqualToString:@"left"] || [kind isEqualToString:@"right"])
++	{
++		CGRect arm = CGRectInset(rect, rect.size.width * 0.12, rect.size.height * 0.12);
++		DrawBody(ctx, [UIBezierPath bezierPathWithRoundedRect:arm cornerRadius:MIN(arm.size.width, arm.size.height) * 0.28], pressed, NO);
++		DrawArrow(kind, arm);
++	}
++	else if([kind isEqualToString:@"select"] || [kind isEqualToString:@"start"])
++	{
++		CGRect pill = CGRectInset(rect, 4, rect.size.height * 0.28);
++		DrawBody(ctx, [UIBezierPath bezierPathWithRoundedRect:pill cornerRadius:pill.size.height / 2], pressed, NO);
++		NSDictionary* attrs = @{ NSFontAttributeName : [UIFont systemFontOfSize:MAX(8, pill.size.height * 0.4) weight:UIFontWeightSemibold],
++			                     NSForegroundColorAttributeName : RGB(210, 216, 228, 0.9) };
++		NSString* t = [kind isEqualToString:@"start"] ? @"START" : @"SELECT";
++		CGSize ts = [t sizeWithAttributes:attrs];
++		[t drawAtPoint:CGPointMake(CGRectGetMidX(pill) - ts.width / 2, CGRectGetMidY(pill) - ts.height / 2) withAttributes:attrs];
++	}
++	else // shoulder / stick-click
++	{
++		CGRect pill = CGRectInset(rect, 4, 4);
++		DrawBody(ctx, [UIBezierPath bezierPathWithRoundedRect:pill cornerRadius:MIN(pill.size.width, pill.size.height) * 0.4], pressed, NO);
++		if([caption length])
++		{
++			NSDictionary* attrs = @{ NSFontAttributeName : [UIFont systemFontOfSize:15 weight:UIFontWeightBold],
++				                     NSForegroundColorAttributeName : RGB(210, 216, 228, 0.9) };
++			CGSize ts = [caption sizeWithAttributes:attrs];
++			[caption drawAtPoint:CGPointMake(CGRectGetMidX(pill) - ts.width / 2, CGRectGetMidY(pill) - ts.height / 2) withAttributes:attrs];
++		}
++	}
++}
++
+++ (void)drawStickBase:(CGRect)rect context:(CGContextRef)ctx
++{
++	CGRect well = CGRectInset(rect, rect.size.width * 0.08, rect.size.height * 0.08);
++	UIBezierPath* p = [UIBezierPath bezierPathWithOvalInRect:well];
++	CGContextSaveGState(ctx);
++	[p addClip];
++	FillGradient(ctx, @[ RGB(8, 9, 12, 0.85), RGB(44, 48, 58, 0.85) ], CGPointMake(0, CGRectGetMinY(well)), CGPointMake(0, CGRectGetMaxY(well)));
++	CGContextRestoreGState(ctx);
++	[RGB(255, 255, 255, 0.18) setStroke];
++	p.lineWidth = 1.5;
++	[p stroke];
++}
++
+++ (void)drawStickCap:(CGRect)rect context:(CGContextRef)ctx
++{
++	CGRect cap = CGRectInset(rect, rect.size.width * 0.2, rect.size.height * 0.2);
++	DrawBody(ctx, [UIBezierPath bezierPathWithOvalInRect:cap], NO, YES);
++	// concave grip ring
++	UIBezierPath* ring = [UIBezierPath bezierPathWithOvalInRect:CGRectInset(cap, cap.size.width * 0.18, cap.size.height * 0.18)];
++	[RGB(0, 0, 0, 0.35) setStroke];
++	ring.lineWidth = 2;
++	[ring stroke];
++}
++
++@end
+diff --git a/Source/ui_ios/Resources/boxart.png b/Source/ui_ios/Resources/boxart.png
+index dd45c03803efca8b89df294a218b164efda484db..a3688a666cb9fa18733f77a133253f6515fb3b1b 100644
+GIT binary patch
+literal 4420
+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
+
+literal 16281
+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
+
+diff --git a/Source/ui_ios/Resources/icon@2x.png b/Source/ui_ios/Resources/icon@2x.png
+index 25139340f262917796689a9c288355aaa8fddd90..920da7ba6fe0bbd7daf0909a8b2e0131c9e0902d 100644
+GIT binary patch
+delta 3127
+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
+R;JN?+002ovPDHLkV1h^5Eja)H
+
+literal 14855
+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
+
+diff --git a/Source/ui_ios/SaveStateViewController.m b/Source/ui_ios/SaveStateViewController.m
+index 1650248..a0e1037 100644
+--- a/Source/ui_ios/SaveStateViewController.m
++++ b/Source/ui_ios/SaveStateViewController.m
+@@ -11,7 +11,7 @@
+ 	[super viewDidLoad];
+ 	UITapGestureRecognizer* tap = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(didTapOutside:)];
+ 	[self.view addGestureRecognizer:tap];
+-	self.button.layer.borderColor = UIColor.whiteColor.CGColor;
++	self.button.layer.borderColor = [UIColor colorWithRed:(182 / 255.0) green:1.0 blue:(60 / 255.0) alpha:1.0].CGColor;
+ 	self.button.layer.borderWidth = 1.0;
+ 	[self update];
+ }
+diff --git a/Source/ui_ios/SettingsViewController.mm b/Source/ui_ios/SettingsViewController.mm
+index f7809a0..420a526 100644
+--- a/Source/ui_ios/SettingsViewController.mm
++++ b/Source/ui_ios/SettingsViewController.mm
+@@ -45,8 +45,68 @@
+ 
+ 	[enableAltServerJIT setOn:CAppConfig::GetInstance().GetPreferenceBoolean(PREFERENCE_ALTSTORE_JIT_ENABLED)];
+ 
+-	NSString* versionString = [NSString stringWithFormat:@"%s - %s", PLAY_VERSION, __DATE__];
++	NSString* versionString = [NSString stringWithFormat:@"VOID DECK v%s", VOIDDECK_VERSION];
+ 	versionInfoLabel.text = versionString;
++
++	[self applyVoidDeckTheme];
++
++	UISegmentedControl* padSize = [[UISegmentedControl alloc] initWithItems:@[ @"Pad: Small", @"Pad: Medium", @"Pad: Large" ]];
++	NSUserDefaults* defaults = [NSUserDefaults standardUserDefaults];
++	padSize.selectedSegmentIndex = [defaults objectForKey:@"voiddeck.padSize"] ? [defaults integerForKey:@"voiddeck.padSize"] : 1;
++	[padSize addTarget:self action:@selector(onPadSizeChanged:) forControlEvents:UIControlEventValueChanged];
++	padSize.selectedSegmentTintColor = VDColor(182, 255, 60);
++	[padSize setTitleTextAttributes:@{ NSForegroundColorAttributeName : VDColor(11, 13, 16) } forState:UIControlStateSelected];
++	UIView* footer = [[UIView alloc] initWithFrame:CGRectMake(0, 0, 320, 64)];
++	padSize.frame = CGRectMake(20, 12, footer.bounds.size.width - 40, 36);
++	padSize.autoresizingMask = UIViewAutoresizingFlexibleWidth;
++	[footer addSubview:padSize];
++	self.tableView.tableFooterView = footer;
++}
++
++- (void)onPadSizeChanged:(UISegmentedControl*)sender
++{
++	[[NSUserDefaults standardUserDefaults] setInteger:sender.selectedSegmentIndex forKey:@"voiddeck.padSize"];
++}
++
++static UIColor* VDColor(int r, int g, int b)
++{
++	return [UIColor colorWithRed:r / 255.0 green:g / 255.0 blue:b / 255.0 alpha:1];
++}
++
++- (void)applyVoidDeckTheme
++{
++	self.overrideUserInterfaceStyle = UIUserInterfaceStyleDark;
++	self.tableView.backgroundColor = VDColor(11, 13, 16);
++	self.tableView.separatorColor = [UIColor colorWithWhite:1 alpha:0.08];
++	self.tableView.tintColor = VDColor(182, 255, 60);
++	self.navigationController.navigationBar.tintColor = VDColor(182, 255, 60);
++	self.navigationController.navigationBar.barTintColor = VDColor(11, 13, 16);
++	self.navigationController.navigationBar.titleTextAttributes = @{ NSForegroundColorAttributeName : [UIColor whiteColor] };
++	for(UISwitch* s in @[ showFpsSwitch, showVirtualPadSwitch, hideVirtualPadWhenControllerConnected, virtualPadHapticFeedbackSwitch, resizeOutputToWidescreen, forceBilinearFiltering, enableAudioOutput, enableAltServerJIT ])
++	{
++		s.onTintColor = VDColor(182, 255, 60);
++	}
++	virtualPadOpacitySlider.minimumTrackTintColor = VDColor(182, 255, 60);
++}
++
++- (void)tableView:(UITableView*)tableView willDisplayCell:(UITableViewCell*)cell forRowAtIndexPath:(NSIndexPath*)indexPath
++{
++	cell.backgroundColor = VDColor(22, 26, 32);
++	for(UIView* v in cell.contentView.subviews)
++	{
++		if([v isKindOfClass:[UILabel class]]) ((UILabel*)v).textColor = [UIColor colorWithWhite:0.92 alpha:1];
++	}
++}
++
++- (void)tableView:(UITableView*)tableView willDisplayHeaderView:(UIView*)view forSection:(NSInteger)section
++{
++	if([view isKindOfClass:[UITableViewHeaderFooterView class]])
++	{
++		auto header = (UITableViewHeaderFooterView*)view;
++		header.textLabel.textColor = VDColor(182, 255, 60);
++		header.textLabel.font = [UIFont monospacedSystemFontOfSize:12 weight:UIFontWeightBold];
++		header.textLabel.text = [header.textLabel.text uppercaseString];
++	}
+ }
+ 
+ - (void)viewDidDisappear:(BOOL)animated
+diff --git a/Source/ui_ios/VirtualPadButton.mm b/Source/ui_ios/VirtualPadButton.mm
+index 030b069..3403f3f 100644
+--- a/Source/ui_ios/VirtualPadButton.mm
++++ b/Source/ui_ios/VirtualPadButton.mm
+@@ -1,6 +1,7 @@
+ #import "AppConfig.h"
+ #import "PreferenceDefs.h"
+ #import "VirtualPadButton.h"
++#import "PadSkin.h"
+ 
+ @interface VirtualPadButton ()
+ @property(strong, nonatomic) UIImpactFeedbackGenerator* impactFeedback;
+@@ -22,30 +23,7 @@
+ 
+ - (void)draw:(CGContextRef)context
+ {
+-	[self.image drawInRect:self.bounds];
+-	if(self.pressed)
+-	{
+-		CGContextSaveGState(context);
+-		CGContextSetBlendMode(context, kCGBlendModePlusDarker);
+-		[self.image drawInRect:self.bounds];
+-		CGContextRestoreGState(context);
+-	}
+-
+-	if([self.caption length] != 0)
+-	{
+-		NSMutableParagraphStyle* paragraphStyle = [[NSParagraphStyle defaultParagraphStyle] mutableCopy];
+-		paragraphStyle.alignment = NSTextAlignmentCenter;
+-		NSDictionary* attributes =
+-		    @{
+-			    NSParagraphStyleAttributeName : paragraphStyle,
+-			    NSForegroundColorAttributeName : [UIColor whiteColor]
+-		    };
+-
+-		CGSize textSize = [self.caption sizeWithAttributes:attributes];
+-		CGRect textRect = CGRectOffset(self.bounds, 0, (self.bounds.size.height - textSize.height) / 2);
+-
+-		[self.caption drawInRect:textRect withAttributes:attributes];
+-	}
++	[PadSkin drawKind:self.kind caption:self.caption inRect:self.bounds pressed:self.pressed context:context];
+ }
+ 
+ - (void)onPointerDown:(CGPoint)position
+diff --git a/Source/ui_ios/VirtualPadItem.h b/Source/ui_ios/VirtualPadItem.h
+index e42afe7..a17bd20 100644
+--- a/Source/ui_ios/VirtualPadItem.h
++++ b/Source/ui_ios/VirtualPadItem.h
+@@ -7,6 +7,7 @@
+ @property(weak) UITouch* touch;
+ @property CPH_Generic* padHandler;
+ @property UIImage* image;
++@property(copy) NSString* kind;
+ 
+ - (void)draw:(CGContextRef)context;
+ - (void)onPointerDown:(CGPoint)position;
+diff --git a/Source/ui_ios/VirtualPadStick.mm b/Source/ui_ios/VirtualPadStick.mm
+index ac2128a..33fc19a 100644
+--- a/Source/ui_ios/VirtualPadStick.mm
++++ b/Source/ui_ios/VirtualPadStick.mm
+@@ -1,11 +1,13 @@
+ #import "VirtualPadStick.h"
++#import "PadSkin.h"
+ 
+ @implementation VirtualPadStick
+ 
+ - (void)draw:(CGContextRef)context
+ {
+-	auto offsetBounds = CGRectOffset(self.bounds, self.offset.x, self.offset.y);
+-	[self.image drawInRect:offsetBounds];
++	[PadSkin drawStickBase:self.bounds context:context];
++	auto offsetBounds = CGRectOffset(self.bounds, self.offset.x * 0.3, self.offset.y * 0.3);
++	[PadSkin drawStickCap:offsetBounds context:context];
+ }
+ 
+ - (void)onPointerDown:(CGPoint)position
+diff --git a/Source/ui_ios/VirtualPadView.mm b/Source/ui_ios/VirtualPadView.mm
+index 8459772..1d6df93 100644
+--- a/Source/ui_ios/VirtualPadView.mm
++++ b/Source/ui_ios/VirtualPadView.mm
+@@ -63,14 +63,73 @@
+ 			button.caption = [NSString stringWithUTF8String:padItem.caption.c_str()];
+ 			item = button;
+ 		}
++		item.kind = [NSString stringWithUTF8String:padItem.imageName.c_str()];
+ 		item.image = [self.itemImages objectForKey:[NSString stringWithUTF8String:padItem.imageName.c_str()]];
+ 		item.padHandler = _padHandler;
+ 		item.bounds = CGRectMake(padItem.x1, padItem.y1, itemWidth, itemHeight);
+ 		[items addObject:item];
+ 	}
++	[self applyErgonomicLayout:items size:frame.size];
+ 	self.items = items;
+ }
+ 
++// Thumb-friendly landscape layout: d-pad and face diamond at the edges,
++// sticks inset toward the center, shoulders as wide pills in the top corners,
++// and L3/SELECT/START/R3 in one row between the sticks.
++- (void)applyErgonomicLayout:(NSArray<VirtualPadItem*>*)items size:(CGSize)size
++{
++	using B = PS2::CControllerInfo;
++	const CGFloat w = size.width, h = size.height;
++	NSInteger sizeIdx = [[NSUserDefaults standardUserDefaults] objectForKey:@"voiddeck.padSize"] ? [[NSUserDefaults standardUserDefaults] integerForKey:@"voiddeck.padSize"] : 1;
++	const CGFloat sizeScale = sizeIdx == 0 ? 0.85 : (sizeIdx == 2 ? 1.2 : 1.0);
++	const CGFloat u = MAX(30, MIN(MIN(h * 0.16, w * 0.07), 60)) * sizeScale;
++	const CGFloat m = MAX(16, u * 0.5);
++	const CGFloat baseY = h - m;
++	const CGFloat stick = u * 1.7;
++	const CGFloat pillW = u * 1.7, pillH = u * 0.62;
++
++	auto setRect = [](VirtualPadItem* it, CGFloat cx, CGFloat cy, CGFloat iw, CGFloat ih) {
++		it.bounds = CGRectMake(cx - iw / 2, cy - ih / 2, iw, ih);
++	};
++
++	CGPoint dpad = CGPointMake(m + u * 1.5, baseY - u * 1.5);
++	CGPoint face = CGPointMake(w - m - u * 1.5, baseY - u * 1.5);
++	CGFloat stickY = baseY - stick / 2;
++	CGFloat midX = w / 2;
++	CGFloat rowY = baseY - u * 0.45;
++
++	for(VirtualPadItem* it in items)
++	{
++		if([it isKindOfClass:[VirtualPadStick class]])
++		{
++			bool left = ((VirtualPadStick*)it).codeX == B::ANALOG_LEFT_X;
++			setRect(it, left ? w * 0.34 : w * 0.66, stickY, stick, stick);
++			continue;
++		}
++		if(![it isKindOfClass:[VirtualPadButton class]]) continue;
++		switch(((VirtualPadButton*)it).code)
++		{
++		case B::DPAD_UP: setRect(it, dpad.x, dpad.y - u, u, u); break;
++		case B::DPAD_DOWN: setRect(it, dpad.x, dpad.y + u, u, u); break;
++		case B::DPAD_LEFT: setRect(it, dpad.x - u, dpad.y, u, u); break;
++		case B::DPAD_RIGHT: setRect(it, dpad.x + u, dpad.y, u, u); break;
++		case B::TRIANGLE: setRect(it, face.x, face.y - u * 1.05, u, u); break;
++		case B::CROSS: setRect(it, face.x, face.y + u * 1.05, u, u); break;
++		case B::SQUARE: setRect(it, face.x - u * 1.05, face.y, u, u); break;
++		case B::CIRCLE: setRect(it, face.x + u * 1.05, face.y, u, u); break;
++		case B::L2: setRect(it, m + pillW / 2, m / 2 + pillH / 2, pillW, pillH); break;
++		case B::L1: setRect(it, m + pillW / 2, m / 2 + pillH * 1.6, pillW, pillH); break;
++		case B::R2: setRect(it, w - m - pillW / 2, m / 2 + pillH / 2, pillW, pillH); break;
++		case B::R1: setRect(it, w - m - pillW / 2, m / 2 + pillH * 1.6, pillW, pillH); break;
++		case B::SELECT: setRect(it, midX - u * 0.65, rowY, u * 1.1, u * 0.7); break;
++		case B::START: setRect(it, midX + u * 0.65, rowY, u * 1.1, u * 0.7); break;
++		case B::L3: setRect(it, midX - u * 1.9, rowY, u * 0.8, u * 0.8); break;
++		case B::R3: setRect(it, midX + u * 1.9, rowY, u * 0.8, u * 0.8); break;
++		default: break;
++		}
++	}
++}
++
+ - (void)drawRect:(CGRect)rect
+ {
+ 	[super drawRect:rect];
