@@ -19,6 +19,9 @@ On a Mac with Xcode:
 ### Game closes and returns to the home screen?
 That is a crash, almost always because JIT isn't active. The app now tests for JIT before starting a game and warns you instead of crashing; use **Enable with StikDebug**, or "Start anyway" at your own risk. Also make sure the IPA is signed with a development certificate (`get-task-allow`).
 
+### iOS 26 / 27 (TXM) support
+Newer iOS versions refuse Play!'s per-block executable allocations, which is what made games crash. `ios/hush-codegen.patch` (applied inside Play!'s `deps/CodeGen`) makes the JIT use one preallocated executable pool via StikDebug's `universal.js` breakpoint protocol (`JIT26PrepareRegion` / `JIT26Detach`), and the app sends `script-name=universal.js` to StikDebug. The pool is set up once per app launch; if you close the app, enable JIT again. Settings has a **JIT: Auto / iOS 26+ / Legacy** switch (Auto uses the new path on iOS 26 and later).
+
 ### JIT with StikDebug
 Install [StikDebug](https://github.com/StikDebug/StikDebug) with its pairing file and LocalDevVPN running. Tapping a game without JIT then offers **Enable with StikDebug**: Hush Emulator opens `stikdebug://enable-jit?bundle-id=...&pid=...`, waits for the debugger to attach, and starts the game. Requirements: sign the IPA in ESign with a **development** certificate (the app needs `get-task-allow`), and use iOS 17.4+. On iOS 26 devices with TXM, StikDebug's JIT needs an app-side breakpoint protocol that Play!'s JIT doesn't implement, so JIT may not work there.
 

@@ -40,6 +40,7 @@ jobs:
         run: |
           cd Play-
           git apply --whitespace=nowarn ../hush/ios/hush-emulator.patch
+          (cd deps/CodeGen && git apply --whitespace=nowarn ../../../hush/ios/hush-codegen.patch)
 
       - name: Install tools
         run: brew install dpkg

@@ -1,0 +1,259 @@
+diff --git a/include/MemoryFunction.h b/include/MemoryFunction.h
+index fca4a0f..2ca85c9 100644
+--- a/include/MemoryFunction.h
++++ b/include/MemoryFunction.h
+@@ -24,8 +24,15 @@ public:
+ 	void operator()(void*);
+ 
+ 	void* GetCode() const;
++	// Address to write through when patching code in place (differs from GetCode() when using the iOS 26 JIT pool).
++	void* GetWritableCode() const;
+ 	size_t GetSize() const;
+ 
++	// iOS 26+ (TXM): preallocates one executable pool through the StikDebug "universal.js" breakpoint protocol.
++	// A debugger running that script must be attached, otherwise this must not be called.
++	static bool InitializeJit26(size_t poolSize);
++	static bool IsJit26Active();
++
+ 	void BeginModify();
+ 	void EndModify();
+ 
+diff --git a/src/MemoryFunction.cpp b/src/MemoryFunction.cpp
+index 73a3dab..dc88cdd 100644
+--- a/src/MemoryFunction.cpp
++++ b/src/MemoryFunction.cpp
+@@ -40,6 +40,9 @@
+ #elif defined(MEMFUNC_USE_MACHVM)
+ #include <mach/mach_init.h>
+ #include <mach/vm_map.h>
++#include <map>
++#include <mutex>
++#include <unistd.h>
+ #elif defined(MEMFUNC_USE_MMAP)
+ #include <sys/mman.h>
+ #include <pthread.h>
+@@ -80,6 +83,147 @@ EM_JS(emscripten::EM_VAL, WasmCreateModule, (uintptr_t code, uintptr_t size),
+ #error "No API to use for CMemoryFunction"
+ #endif
+ 
++#if defined(MEMFUNC_USE_MACHVM)
++
++// iOS 26 breakpoint protocol understood by StikDebug's universal.js (arm64 only).
++#if defined(__aarch64__)
++extern "C"
++{
++	__attribute__((noinline, optnone, naked)) void* HushJIT26PrepareRegion(void*, size_t)
++	{
++		__asm__("mov x16, #1\n brk #0xf00d\n ret\n");
++	}
++	__attribute__((noinline, optnone, naked)) void HushJIT26Detach(void)
++	{
++		__asm__("mov x16, #0\n brk #0xf00d\n ret\n");
++	}
++}
++extern "C" int csops(pid_t, unsigned int, void*, size_t);
++#endif
++
++namespace
++{
++	struct Jit26Pool
++	{
++		std::mutex lock;
++		uint8_t* rx = nullptr;
++		uint8_t* rw = nullptr;
++		size_t size = 0;
++		bool active = false;
++		std::map<size_t, size_t> freeList; //offset -> length
++
++		bool Contains(const void* p) const
++		{
++			return active && p >= rx && p < rx + size;
++		}
++
++		bool Alloc(size_t len, size_t& offset)
++		{
++			std::lock_guard<std::mutex> guard(lock);
++			for(auto it = freeList.begin(); it != freeList.end(); ++it)
++			{
++				if(it->second < len) continue;
++				offset = it->first;
++				auto remaining = it->second - len;
++				auto next = it->first + len;
++				freeList.erase(it);
++				if(remaining) freeList[next] = remaining;
++				return true;
++			}
++			return false;
++		}
++
++		void Free(size_t offset, size_t len)
++		{
++			std::lock_guard<std::mutex> guard(lock);
++			auto it = freeList.emplace(offset, len).first;
++			auto next = std::next(it);
++			if(next != freeList.end() && it->first + it->second == next->first)
++			{
++				it->second += next->second;
++				freeList.erase(next);
++			}
++			if(it != freeList.begin())
++			{
++				auto prev = std::prev(it);
++				if(prev->first + prev->second == it->first)
++				{
++					prev->second += it->second;
++					freeList.erase(it);
++				}
++			}
++		}
++	};
++
++	Jit26Pool g_jit26Pool;
++}
++
++bool CMemoryFunction::IsJit26Active()
++{
++	return g_jit26Pool.active;
++}
++
++bool CMemoryFunction::InitializeJit26(size_t poolSize)
++{
++#if defined(__aarch64__)
++	if(g_jit26Pool.active) return true;
++
++	//A breakpoint without an attached debugger kills the process, so verify first
++	const unsigned int CS_OPS_STATUS = 0;
++	const unsigned int CS_DEBUGGED = 0x10000000;
++	unsigned int flags = 0;
++	if(csops(getpid(), CS_OPS_STATUS, &flags, sizeof(flags)) != 0 || !(flags & CS_DEBUGGED)) return false;
++
++	bool success = false;
++	for(size_t size = poolSize; size >= (32u << 20) && !success; size /= 2)
++	{
++		void* rx = HushJIT26PrepareRegion(nullptr, size);
++		if(!rx || rx == reinterpret_cast<void*>(-1)) continue;
++
++		vm_address_t rw = 0;
++		vm_prot_t curProt = 0, maxProt = 0;
++		kern_return_t result = vm_remap(mach_task_self(), &rw, size, 0, VM_FLAGS_ANYWHERE,
++		                                mach_task_self(), reinterpret_cast<vm_address_t>(rx), FALSE,
++		                                &curProt, &maxProt, VM_INHERIT_NONE);
++		if(result != KERN_SUCCESS) continue;
++		result = vm_protect(mach_task_self(), rw, size, FALSE, VM_PROT_READ | VM_PROT_WRITE);
++		if(result != KERN_SUCCESS)
++		{
++			vm_deallocate(mach_task_self(), rw, size);
++			continue;
++		}
++
++		g_jit26Pool.rx = reinterpret_cast<uint8_t*>(rx);
++		g_jit26Pool.rw = reinterpret_cast<uint8_t*>(rw);
++		g_jit26Pool.size = size;
++		g_jit26Pool.freeList.clear();
++		g_jit26Pool.freeList[0] = size;
++		g_jit26Pool.active = true;
++		success = true;
++	}
++
++	//Regions can't be added after detaching, so everything above must happen first
++	HushJIT26Detach();
++	return success;
++#else
++	return false;
++#endif
++}
++
++#else
++
++bool CMemoryFunction::IsJit26Active()
++{
++	return false;
++}
++
++bool CMemoryFunction::InitializeJit26(size_t)
++{
++	return false;
++}
++
++#endif
++
+ CMemoryFunction::CMemoryFunction()
+ : m_code(nullptr)
+ , m_size(0)
+@@ -99,6 +243,22 @@ CMemoryFunction::CMemoryFunction(const void* code, size_t size)
+ 	BOOL result = VirtualProtect(m_code, size, PAGE_EXECUTE_READWRITE, &oldProtect);
+ 	assert(result == TRUE);
+ #elif defined(MEMFUNC_USE_MACHVM)
++	if(g_jit26Pool.active)
++	{
++		size_t allocSize = (size + (BLOCK_ALIGN - 1)) & ~size_t(BLOCK_ALIGN - 1);
++		size_t offset = 0;
++		if(!g_jit26Pool.Alloc(allocSize, offset))
++		{
++			m_size = 0;
++			assert(false);
++			return;
++		}
++		m_code = g_jit26Pool.rx + offset;
++		m_size = allocSize;
++		memcpy(g_jit26Pool.rw + offset, code, size);
++		ClearCache();
++		return;
++	}
+ 	vm_size_t page_size = 0;
+ 	host_page_size(mach_task_self(), &page_size);
+ 	unsigned int allocSize = ((size + page_size - 1) / page_size) * page_size;
+@@ -162,7 +322,14 @@ void CMemoryFunction::Reset()
+ #if defined(MEMFUNC_USE_WIN32)
+ 		framework_aligned_free(m_code);
+ #elif defined(MEMFUNC_USE_MACHVM)
+-		vm_deallocate(mach_task_self(), reinterpret_cast<vm_address_t>(m_code), m_size);
++		if(g_jit26Pool.Contains(m_code))
++		{
++			g_jit26Pool.Free(reinterpret_cast<uint8_t*>(m_code) - g_jit26Pool.rx, m_size);
++		}
++		else
++		{
++			vm_deallocate(mach_task_self(), reinterpret_cast<vm_address_t>(m_code), m_size);
++		}
+ #elif defined(MEMFUNC_USE_MMAP)
+ 		munmap(m_code, m_size);
+ #elif defined(MEMFUNC_USE_WASM)
+@@ -204,6 +371,17 @@ void* CMemoryFunction::GetCode() const
+ 	return m_code;
+ }
+ 
++void* CMemoryFunction::GetWritableCode() const
++{
++#if defined(MEMFUNC_USE_MACHVM)
++	if(g_jit26Pool.Contains(m_code))
++	{
++		return g_jit26Pool.rw + (reinterpret_cast<uint8_t*>(m_code) - g_jit26Pool.rx);
++	}
++#endif
++	return m_code;
++}
++
+ size_t CMemoryFunction::GetSize() const
+ {
+ 	return m_size;
+@@ -212,6 +390,7 @@ size_t CMemoryFunction::GetSize() const
+ void CMemoryFunction::BeginModify()
+ {
+ #if defined(MEMFUNC_USE_MACHVM) && defined(MEMFUNC_MACHVM_STRICT_PROTECTION)
++	if(g_jit26Pool.Contains(m_code)) return;
+ 	kern_return_t result = vm_protect(mach_task_self(), reinterpret_cast<vm_address_t>(m_code), m_size, 0, VM_PROT_READ | VM_PROT_WRITE);
+ 	assert(result == 0);
+ #elif defined(MEMFUNC_USE_MMAP) && defined(MEMFUNC_MMAP_REQUIRES_JIT_WRITE_PROTECT)
+@@ -222,6 +401,11 @@ void CMemoryFunction::BeginModify()
+ void CMemoryFunction::EndModify()
+ {
+ #if defined(MEMFUNC_USE_MACHVM) && defined(MEMFUNC_MACHVM_STRICT_PROTECTION)
++	if(g_jit26Pool.Contains(m_code))
++	{
++		ClearCache();
++		return;
++	}
+ 	kern_return_t result = vm_protect(mach_task_self(), reinterpret_cast<vm_address_t>(m_code), m_size, 0, VM_PROT_READ | VM_PROT_EXECUTE);
+ 	assert(result == 0);
+ #elif defined(MEMFUNC_USE_MMAP) && defined(MEMFUNC_MMAP_REQUIRES_JIT_WRITE_PROTECT)

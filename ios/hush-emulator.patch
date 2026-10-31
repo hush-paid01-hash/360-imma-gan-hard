@@ -1,3 +1,27 @@
+diff --git a/Source/BasicBlock.cpp b/Source/BasicBlock.cpp
+index 4c460e6..b126a26 100644
+--- a/Source/BasicBlock.cpp
++++ b/Source/BasicBlock.cpp
+@@ -408,8 +408,8 @@ void CBasicBlock::LinkBlock(LINK_SLOT linkSlot, CBasicBlock* otherBlock)
+ 	m_linkBlock[linkSlot] = otherBlock;
+ #endif
+ 	auto patchValue = reinterpret_cast<uintptr_t>(otherBlock->m_function.GetCode());
+-	auto code = reinterpret_cast<uint8*>(m_function.GetCode());
+ 	m_function.BeginModify();
++	auto code = reinterpret_cast<uint8*>(m_function.GetWritableCode());
+ 	*reinterpret_cast<uintptr_t*>(code + m_linkBlockTrampolineOffset[linkSlot]) = patchValue;
+ 	m_function.EndModify();
+ #endif //!AOT_ENABLED && !__EMSCRIPTEN__
+@@ -426,8 +426,8 @@ void CBasicBlock::UnlinkBlock(LINK_SLOT linkSlot)
+ 	m_linkBlock[linkSlot] = nullptr;
+ #endif
+ 	auto patchValue = (linkSlot == LINK_SLOT_NEXT) ? reinterpret_cast<uintptr_t>(&NextBlockTrampoline) : reinterpret_cast<uintptr_t>(&BranchBlockTrampoline);
+-	auto code = reinterpret_cast<uint8*>(m_function.GetCode());
+ 	m_function.BeginModify();
++	auto code = reinterpret_cast<uint8*>(m_function.GetWritableCode());
+ 	*reinterpret_cast<uintptr_t*>(code + m_linkBlockTrampolineOffset[linkSlot]) = patchValue;
+ 	m_function.EndModify();
+ #endif //!AOT_ENABLED && !__EMSCRIPTEN__
 diff --git a/Source/ui_ios/BackgroundLayer.m b/Source/ui_ios/BackgroundLayer.m
 index db61330..2d5b123 100644
 --- a/Source/ui_ios/BackgroundLayer.m
@@ -110,44 +134,28 @@ index 1a36a6c..4d24656 100644
  		XCODE_ATTRIBUTE_TARGETED_DEVICE_FAMILY "1,2"
  		RESOURCE "${OSX_RES}"
 diff --git a/Source/ui_ios/CoverViewController.mm b/Source/ui_ios/CoverViewController.mm
-index 4b6da50..dd96842 100644
+index 4b6da50..8d83041 100644
 --- a/Source/ui_ios/CoverViewController.mm
 +++ b/Source/ui_ios/CoverViewController.mm
-@@ -8,29 +8,70 @@
+@@ -8,29 +8,106 @@
  #import "BackgroundLayer.h"
  #import "CoverViewCell.h"
  #import "AltServerJitService.h"
 +#include <sys/mman.h>
++#include "MemoryFunction.h"
  
 -static bool IsJitAvailable()
 +extern "C" int csops(pid_t pid, unsigned int ops, void* useraddr, size_t usersize);
 +
 +// True once any debugger (Xcode, AltServer, StikDebug...) has attached to this process.
 +static bool IsDebuggerAttached()
- {
--	//If ppid != 1, it means we're being run in the debugger
--	if(getppid() != 1) return true;
--	if([[AltServerJitService sharedAltServerJitService] jitEnabled])
--	{
--		return true;
--	}
--	{
--		//Check if we can scan the mobile directory (only possible if jailbroken)
--		std::error_code errorCode;
--		fs::directory_iterator dirIterator("/private/var/mobile", errorCode);
--		if(!errorCode)
--		{
--			return true;
--		}
--	}
--	return false;
++{
 +	const unsigned int CS_OPS_STATUS = 0;
 +	const unsigned int CS_DEBUGGED = 0x10000000;
 +	unsigned int flags = 0;
 +	return csops(getpid(), CS_OPS_STATUS, &flags, sizeof(flags)) == 0 && (flags & CS_DEBUGGED);
- }
- 
--@interface CoverViewController ()
++}
++
 +// Real capability test: without JIT the kernel refuses a writable+executable MAP_JIT mapping,
 +// which is exactly what makes the emulator crash back to the home screen.
 +static bool CanAllocateJitMemory()
@@ -159,30 +167,64 @@ index 4b6da50..dd96842 100644
 +	return true;
 +}
 +
++// iOS 26+ devices enforce TXM, which needs the preallocated-pool JIT protocol (setting: 0 auto, 1 TXM, 2 legacy).
++static bool UseTxmProtocol()
++{
++	NSInteger mode = [[NSUserDefaults standardUserDefaults] integerForKey:@"hush.jitMode"];
++	if(mode == 1) return true;
++	if(mode == 2) return false;
++	return [[NSProcessInfo processInfo] isOperatingSystemAtLeastVersion:NSOperatingSystemVersion{26, 0, 0}];
++}
++
++// Runs the breakpoint protocol once a debugger is attached. Safe to call repeatedly.
++static bool PrepareTxmJit()
++{
++	if(CMemoryFunction::IsJit26Active()) return true;
++	if(!IsDebuggerAttached()) return false;
++	[NSThread sleepForTimeInterval:0.5]; //let the debugger script finish installing
++	return CMemoryFunction::InitializeJit26(256u << 20);
++}
++
 +static bool IsStikDebugInstalled()
 +{
 +	return [[UIApplication sharedApplication] canOpenURL:[NSURL URLWithString:@"stikdebug://"]];
 +}
- 
++
 +// Asks StikDebug to attach to this process, then calls done(true) once JIT is active or done(false) on timeout.
 +static void RequestStikDebugJit(void (^done)(bool))
-+{
+ {
+-	//If ppid != 1, it means we're being run in the debugger
+-	if(getppid() != 1) return true;
+-	if([[AltServerJitService sharedAltServerJitService] jitEnabled])
 +	NSURLComponents* c = [[NSURLComponents alloc] init];
 +	c.scheme = @"stikdebug";
 +	c.host = @"enable-jit";
-+	c.queryItems = @[
++	NSMutableArray* items = [NSMutableArray arrayWithArray:@[
 +		[NSURLQueryItem queryItemWithName:@"bundle-id" value:[[NSBundle mainBundle] bundleIdentifier]],
 +		[NSURLQueryItem queryItemWithName:@"pid" value:[NSString stringWithFormat:@"%d", getpid()]],
-+	];
++	]];
++	if(UseTxmProtocol())
+ 	{
+-		return true;
++		[items addObject:[NSURLQueryItem queryItemWithName:@"script-name" value:@"universal.js"]];
+ 	}
++	c.queryItems = items;
 +	[[UIApplication sharedApplication] openURL:c.URL options:@{} completionHandler:nil];
 +
++	//Keep running while StikDebug is in the foreground
++	__block UIBackgroundTaskIdentifier bgTask = UIBackgroundTaskInvalid;
++	bgTask = [[UIApplication sharedApplication] beginBackgroundTaskWithName:@"StikDebugJit" expirationHandler:^{
++	  [[UIApplication sharedApplication] endBackgroundTask:bgTask];
++	  bgTask = UIBackgroundTaskInvalid;
++	}];
 +	dispatch_async(dispatch_get_global_queue(QOS_CLASS_UTILITY, 0), ^{
 +	  bool ok = false;
-+	  for(int i = 0; i < 60 && !ok; i++)
++	  for(int i = 0; i < 120 && !ok; i++)
 +	  {
 +		  [NSThread sleepForTimeInterval:0.5];
-+		  ok = IsDebuggerAttached() && CanAllocateJitMemory();
++		  ok = UseTxmProtocol() ? PrepareTxmJit() : (IsDebuggerAttached() && CanAllocateJitMemory());
 +	  }
++	  if(bgTask != UIBackgroundTaskInvalid) [[UIApplication sharedApplication] endBackgroundTask:bgTask];
 +	  dispatch_async(dispatch_get_main_queue(), ^{
 +		done(ok);
 +	  });
@@ -191,9 +233,24 @@ index 4b6da50..dd96842 100644
 +
 +static bool IsJitAvailable()
 +{
++	if(UseTxmProtocol())
+ 	{
+-		//Check if we can scan the mobile directory (only possible if jailbroken)
+-		std::error_code errorCode;
+-		fs::directory_iterator dirIterator("/private/var/mobile", errorCode);
+-		if(!errorCode)
+-		{
+-			return true;
+-		}
++		//A debugger that is already attached (manual StikDebug launch) is assumed to run the script
++		return PrepareTxmJit();
+ 	}
+-	return false;
 +	return CanAllocateJitMemory();
-+}
-+
+ }
+ 
+-@interface CoverViewController ()
+-
 +@interface CoverViewController () <UISearchResultsUpdating>
 +{
 +	NSMutableArray<NSNumber*>* _visible;
@@ -202,7 +259,7 @@ index 4b6da50..dd96842 100644
  @end
  
  @implementation CoverViewController
-@@ -101,20 +142,85 @@ static NSString* const reuseIdentifier = @"coverCell";
+@@ -101,20 +178,85 @@ static NSString* const reuseIdentifier = @"coverCell";
  	  //Done
  	  dispatch_async(dispatch_get_main_queue(), ^{
  		[alert dismissViewControllerAnimated:YES completion:nil];
@@ -289,7 +346,7 @@ index 4b6da50..dd96842 100644
  	if(@available(iOS 11.0, *))
  	{
  		self.collectionView.contentInsetAdjustmentBehavior = UIScrollViewContentInsetAdjustmentAlways;
-@@ -132,6 +238,26 @@ static NSString* const reuseIdentifier = @"coverCell";
+@@ -132,6 +274,26 @@ static NSString* const reuseIdentifier = @"coverCell";
  	[super viewDidUnload];
  }
  
@@ -316,7 +373,7 @@ index 4b6da50..dd96842 100644
  - (void)willAnimateRotationToInterfaceOrientation:(UIInterfaceOrientation)toInterfaceOrientation duration:(NSTimeInterval)duration
  {
  	// resize your layers based on the view’s new bounds
-@@ -164,17 +290,48 @@ static NSString* const reuseIdentifier = @"coverCell";
+@@ -164,17 +326,48 @@ static NSString* const reuseIdentifier = @"coverCell";
  
  - (NSInteger)collectionView:(UICollectionView*)collectionView numberOfItemsInSection:(NSInteger)section
  {
@@ -368,7 +425,7 @@ index 4b6da50..dd96842 100644
  
  	if(!bootable.coverUrl.empty())
  	{
-@@ -187,14 +344,53 @@ static NSString* const reuseIdentifier = @"coverCell";
+@@ -187,14 +380,53 @@ static NSString* const reuseIdentifier = @"coverCell";
  
  #pragma mark <UICollectionViewDelegate>
  
@@ -424,7 +481,7 @@ index 4b6da50..dd96842 100644
  			              style:UIAlertActionStyleDefault
  			            handler:^(UIAlertAction*) {
  				          [self performSegueWithIdentifier:@"showEmulator" sender:sender];
-@@ -228,7 +424,7 @@ static NSString* const reuseIdentifier = @"coverCell";
+@@ -228,7 +460,7 @@ static NSString* const reuseIdentifier = @"coverCell";
  	if([segue.identifier isEqualToString:@"showEmulator"])
  	{
  		NSIndexPath* indexPath = [[self.collectionView indexPathsForSelectedItems] objectAtIndex:0];
@@ -1558,10 +1615,10 @@ index 1650248..a0e1037 100644
  	[self update];
  }
 diff --git a/Source/ui_ios/SettingsViewController.mm b/Source/ui_ios/SettingsViewController.mm
-index f7809a0..cddfa80 100644
+index f7809a0..f49208f 100644
 --- a/Source/ui_ios/SettingsViewController.mm
 +++ b/Source/ui_ios/SettingsViewController.mm
-@@ -45,8 +45,68 @@
+@@ -45,8 +45,81 @@
  
  	[enableAltServerJIT setOn:CAppConfig::GetInstance().GetPreferenceBoolean(PREFERENCE_ALTSTORE_JIT_ENABLED)];
  
@@ -1577,11 +1634,24 @@ index f7809a0..cddfa80 100644
 +	[padSize addTarget:self action:@selector(onPadSizeChanged:) forControlEvents:UIControlEventValueChanged];
 +	padSize.selectedSegmentTintColor = VDColor(182, 255, 60);
 +	[padSize setTitleTextAttributes:@{ NSForegroundColorAttributeName : VDColor(11, 13, 16) } forState:UIControlStateSelected];
-+	UIView* footer = [[UIView alloc] initWithFrame:CGRectMake(0, 0, 320, 64)];
++	UISegmentedControl* jitMode = [[UISegmentedControl alloc] initWithItems:@[ @"JIT: Auto", @"JIT: iOS 26+", @"JIT: Legacy" ]];
++	jitMode.selectedSegmentIndex = [defaults integerForKey:@"hush.jitMode"];
++	[jitMode addTarget:self action:@selector(onJitModeChanged:) forControlEvents:UIControlEventValueChanged];
++	jitMode.selectedSegmentTintColor = VDColor(182, 255, 60);
++	[jitMode setTitleTextAttributes:@{ NSForegroundColorAttributeName : VDColor(11, 13, 16) } forState:UIControlStateSelected];
++	UIView* footer = [[UIView alloc] initWithFrame:CGRectMake(0, 0, 320, 112)];
 +	padSize.frame = CGRectMake(20, 12, footer.bounds.size.width - 40, 36);
 +	padSize.autoresizingMask = UIViewAutoresizingFlexibleWidth;
++	jitMode.frame = CGRectMake(20, 60, footer.bounds.size.width - 40, 36);
++	jitMode.autoresizingMask = UIViewAutoresizingFlexibleWidth;
 +	[footer addSubview:padSize];
++	[footer addSubview:jitMode];
 +	self.tableView.tableFooterView = footer;
++}
++
++- (void)onJitModeChanged:(UISegmentedControl*)sender
++{
++	[[NSUserDefaults standardUserDefaults] setInteger:sender.selectedSegmentIndex forKey:@"hush.jitMode"];
 +}
 +
 +- (void)onPadSizeChanged:(UISegmentedControl*)sender
