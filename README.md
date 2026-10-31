@@ -16,6 +16,9 @@ On a Mac with Xcode:
 2. Follow Play!'s iOS build steps (`installer_ios/`, CMake `-G Xcode -DCMAKE_TOOLCHAIN_FILE=deps/Dependencies/cmake-ios/ios.cmake`).
 3. Download the `HushEmulator-5.0.0.ipa` artifact from the Actions run and sign/install it with ESign (the IPA is unsigned; ESign signs it with your certificate). JIT is still required for speed.
 
+### Game closes and returns to the home screen?
+That is a crash, almost always because JIT isn't active. The app now tests for JIT before starting a game and warns you instead of crashing; use **Enable with StikDebug**, or "Start anyway" at your own risk. Also make sure the IPA is signed with a development certificate (`get-task-allow`).
+
 ### JIT with StikDebug
 Install [StikDebug](https://github.com/StikDebug/StikDebug) with its pairing file and LocalDevVPN running. Tapping a game without JIT then offers **Enable with StikDebug**: Hush Emulator opens `stikdebug://enable-jit?bundle-id=...&pid=...`, waits for the debugger to attach, and starts the game. Requirements: sign the IPA in ESign with a **development** certificate (the app needs `get-task-allow`), and use iOS 17.4+. On iOS 26 devices with TXM, StikDebug's JIT needs an app-side breakpoint protocol that Play!'s JIT doesn't implement, so JIT may not work there.
 
