@@ -27,6 +27,22 @@ def scan_games(folder: str) -> list[Path]:
     return sorted(p for p in root.rglob("*") if p.suffix.lower() in GAME_EXTS)
 
 
+def filter_games(games: list[Path], query: str = "", favorites=(), recent=(),
+                 view: str = "all") -> list[Path]:
+    """Filter by view (all/favorites/recent) and a case-insensitive name query."""
+    q = query.strip().lower()
+    if view == "favorites":
+        games = [g for g in games if str(g) in set(favorites)]
+    elif view == "recent":
+        order = {p: i for i, p in enumerate(recent)}
+        games = sorted((g for g in games if str(g) in order), key=lambda g: order[str(g)])
+    return [g for g in games if q in g.stem.lower()]
+
+
+def push_recent(recent: list[str], game: str, limit: int = 20) -> list[str]:
+    return ([game] + [r for r in recent if r != game])[:limit]
+
+
 def build_command(engine: str, game: str, bios: str | None = None,
                   fullscreen: bool = True, fast_boot: bool = True) -> list[str]:
     cmd = [engine, "-batch"]

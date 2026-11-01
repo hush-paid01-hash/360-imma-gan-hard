@@ -2,6 +2,7 @@
 
 ## HUSH EMULATOR launcher (PCSX2 engine)
 Custom frontend that runs games through the installed [PCSX2](https://pcsx2.net) engine (GPLv3, not bundled).
+Features: live search, ALL/RECENT/FAVORITES views (press `f` or ★ to favorite), fullscreen and fast-boot toggles, Enter/double-click to play.
 Install PCSX2 and supply your own BIOS dump and game backups, then run: `python -m launcher.app`
 
 ## iPhone build: HUSH EMULATOR v5.0.0 (Play! core)
