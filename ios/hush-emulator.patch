@@ -134,7 +134,7 @@ index 1a36a6c..4d24656 100644
  		XCODE_ATTRIBUTE_TARGETED_DEVICE_FAMILY "1,2"
  		RESOURCE "${OSX_RES}"
 diff --git a/Source/ui_ios/CoverViewController.mm b/Source/ui_ios/CoverViewController.mm
-index 4b6da50..8d83041 100644
+index 4b6da50..8b4f693 100644
 --- a/Source/ui_ios/CoverViewController.mm
 +++ b/Source/ui_ios/CoverViewController.mm
 @@ -8,29 +8,106 @@
@@ -425,7 +425,7 @@ index 4b6da50..8d83041 100644
  
  	if(!bootable.coverUrl.empty())
  	{
-@@ -187,14 +380,53 @@ static NSString* const reuseIdentifier = @"coverCell";
+@@ -187,14 +380,54 @@ static NSString* const reuseIdentifier = @"coverCell";
  
  #pragma mark <UICollectionViewDelegate>
  
@@ -452,7 +452,7 @@ index 4b6da50..8d83041 100644
  	if([identifier isEqualToString:@"showEmulator"] && !IsJitAvailable())
  	{
 -		UIAlertController* alert = [UIAlertController alertControllerWithTitle:@"JIT unavailable" message:@"JIT doesn't seem to be available at the moment. If JIT is not available, the emulator will crash. Do you wish to continue?" preferredStyle:UIAlertControllerStyleAlert];
-+		UIAlertController* alert = [UIAlertController alertControllerWithTitle:@"JIT unavailable" message:@"JIT is not active, so games would crash back to the home screen. Enable JIT (StikDebug, AltStore/SideStore, or a debugger), then try again. You can still start anyway, but it will most likely crash." preferredStyle:UIAlertControllerStyleAlert];
++		UIAlertController* alert = [UIAlertController alertControllerWithTitle:@"JIT unavailable" message:@"JIT is not active, so games would crash back to the home screen. Enable JIT (StikDebug, AltStore/SideStore, or a debugger), then try again. On iOS 26+ the game cannot start without it." preferredStyle:UIAlertControllerStyleAlert];
 +		if(IsStikDebugInstalled())
 +		{
 +			UIAlertAction* stikAction = [UIAlertAction
@@ -474,6 +474,7 @@ index 4b6da50..8d83041 100644
 +			            }];
 +			[alert addAction:stikAction];
 +		}
++		if(!UseTxmProtocol()) //on iOS 26+ starting without the JIT pool always gets the app killed
  		{
  			UIAlertAction* continueAction = [UIAlertAction
 -			    actionWithTitle:@"Continue"
@@ -481,7 +482,7 @@ index 4b6da50..8d83041 100644
  			              style:UIAlertActionStyleDefault
  			            handler:^(UIAlertAction*) {
  				          [self performSegueWithIdentifier:@"showEmulator" sender:sender];
-@@ -228,7 +460,7 @@ static NSString* const reuseIdentifier = @"coverCell";
+@@ -228,7 +461,7 @@ static NSString* const reuseIdentifier = @"coverCell";
  	if([segue.identifier isEqualToString:@"showEmulator"])
  	{
  		NSIndexPath* indexPath = [[self.collectionView indexPathsForSelectedItems] objectAtIndex:0];
