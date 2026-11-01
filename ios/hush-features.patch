@@ -1,5 +1,5 @@
 diff --git a/Source/ui_ios/EmulatorViewController.mm b/Source/ui_ios/EmulatorViewController.mm
-index 2dc0987f..afc8d98d 100644
+index 2dc0987f..18f54b05 100644
 --- a/Source/ui_ios/EmulatorViewController.mm
 +++ b/Source/ui_ios/EmulatorViewController.mm
 @@ -27,6 +27,19 @@ CPS2VM::NewFrameEvent::Connection g_newFrameConnection;
@@ -22,7 +22,56 @@ index 2dc0987f..afc8d98d 100644
  @implementation EmulatorViewController
  
  + (void)registerPreferences
-@@ -140,16 +153,37 @@ CPS2VM::NewFrameEvent::Connection g_newFrameConnection;
+@@ -128,28 +141,81 @@ CPS2VM::NewFrameEvent::Connection g_newFrameConnection;
+ 	g_virtualMachine->Reset();
+ 
+ 	auto bootablePath = fs::path([self.bootablePath fileSystemRepresentation]);
+-	if(BootableUtils::IsBootableExecutablePath(bootablePath))
++	std::string bootError;
++	std::error_code fsError;
++	if(!fs::is_regular_file(bootablePath, fsError))
+ 	{
+-		g_virtualMachine->m_ee->m_os->BootFromFile(bootablePath);
++		bootError = "The game file could not be found. It may have been moved or deleted.";
+ 	}
+ 	else
+ 	{
+-		CAppConfig::GetInstance().SetPreferencePath(PREF_PS2_CDROM0_PATH, bootablePath);
+-		g_virtualMachine->Reset();
+-		g_virtualMachine->m_ee->m_os->BootFromCDROM();
++		//A bad or unsupported image makes the boot code throw; uncaught, that kills the app
++		try
++		{
++			if(BootableUtils::IsBootableExecutablePath(bootablePath))
++			{
++				g_virtualMachine->m_ee->m_os->BootFromFile(bootablePath);
++			}
++			else
++			{
++				CAppConfig::GetInstance().SetPreferencePath(PREF_PS2_CDROM0_PATH, bootablePath);
++				g_virtualMachine->Reset();
++				g_virtualMachine->m_ee->m_os->BootFromCDROM();
++			}
++		}
++		catch(const std::exception& e)
++		{
++			bootError = e.what();
++		}
++		catch(...)
++		{
++			bootError = "Unknown error while starting the game.";
++		}
++	}
++
++	if(!bootError.empty())
++	{
++		NSString* message = [NSString stringWithFormat:@"This game could not be started.\n\n%s\n\nMake sure it is a valid PS2 disc image (ISO, BIN, CHD, CSO, ZSO, ISZ) or ELF.", bootError.c_str()];
++		UIAlertController* alert = [UIAlertController alertControllerWithTitle:@"Can't start game" message:message preferredStyle:UIAlertControllerStyleAlert];
++		[alert addAction:[UIAlertAction actionWithTitle:@"OK" style:UIAlertActionStyleDefault handler:^(UIAlertAction*) {
++		  [self onExitButtonClick];
++		}]];
++		[self presentViewController:alert animated:YES completion:nil];
++		return;
  	}
  
  	g_virtualMachine->Resume();
@@ -60,7 +109,7 @@ index 2dc0987f..afc8d98d 100644
  	g_virtualMachine->Destroy();
  	delete g_virtualMachine;
  	g_virtualMachine = nullptr;
-@@ -164,6 +198,7 @@ CPS2VM::NewFrameEvent::Connection g_newFrameConnection;
+@@ -164,6 +230,7 @@ CPS2VM::NewFrameEvent::Connection g_newFrameConnection;
  	if(g_virtualMachine)
  	{
  		g_virtualMachine->Pause();
@@ -68,7 +117,7 @@ index 2dc0987f..afc8d98d 100644
  	}
  }
  
-@@ -187,6 +222,12 @@ CPS2VM::NewFrameEvent::Connection g_newFrameConnection;
+@@ -187,6 +254,12 @@ CPS2VM::NewFrameEvent::Connection g_newFrameConnection;
  			    ^(GCExtendedGamepad* gamepad, GCControllerElement* element) {
  				  auto padHandler = static_cast<CPH_Generic*>(g_virtualMachine->GetPadHandler());
  				  if(!padHandler) return;
@@ -81,7 +130,7 @@ index 2dc0987f..afc8d98d 100644
  				  if(element == gamepad.buttonA)
  					  padHandler->SetButtonState(PS2::CControllerInfo::CROSS, gamepad.buttonA.pressed);
  				  else if(element == gamepad.buttonB)
-@@ -212,13 +253,13 @@ CPS2VM::NewFrameEvent::Connection g_newFrameConnection;
+@@ -212,13 +285,13 @@ CPS2VM::NewFrameEvent::Connection g_newFrameConnection;
  				  }
  				  else if(element == gamepad.leftThumbstick)
  				  {
@@ -99,7 +148,7 @@ index 2dc0987f..afc8d98d 100644
  				  }
  #if __IPHONE_OS_VERSION_MAX_ALLOWED >= 120100
  				  if(@available(iOS 12.1, *))
-@@ -412,6 +453,19 @@ CPS2VM::NewFrameEvent::Connection g_newFrameConnection;
+@@ -412,6 +485,19 @@ CPS2VM::NewFrameEvent::Connection g_newFrameConnection;
  		[alert addAction:action];
  	}
  

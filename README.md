@@ -1,9 +1,6 @@
 # 360-imma-gan-hard
 
-## HUSH EMULATOR launcher (PCSX2 engine)
-Custom frontend that runs games through the installed [PCSX2](https://pcsx2.net) engine (GPLv3, not bundled).
-Features: live search, ALL/RECENT/FAVORITES views (press `f` or ★ to favorite), fullscreen and fast-boot toggles, Enter/double-click to play.
-Install PCSX2 and supply your own BIOS dump and game backups, then run: `python -m launcher.app`
+HUSH EMULATOR is an **iPhone-only** PS2 emulator app (a restyled build of the [Play!](https://github.com/jpd002/Play-) core). There is no desktop version.
 
 ## iPhone build: HUSH EMULATOR v5.0.0 (Play! core)
 `ios/hush-emulator.patch` turns the iOS app of [Play!](https://github.com/jpd002/Play-) (BSD-2) into HUSH EMULATOR 5.0.0:
@@ -21,6 +18,7 @@ On a Mac with Xcode:
 - Settings: frame limiter toggle, keep screen awake, auto-save on exit / auto-resume on launch, controller haptics, stick deadzone slider
 - In-game pause menu: Quick Save, Quick Load, Toggle FPS counter
 - Hardware controller sticks use the deadzone setting
+- Safe game loading: a missing file or a bad/unsupported disc image shows an error and returns to the library instead of crashing the app
 
 ### Game closes and returns to the home screen?
 That is a crash, almost always because JIT isn't active. The app now tests for JIT before starting a game and warns you instead of crashing; use **Enable with StikDebug**, or "Start anyway" at your own risk. Also make sure the IPA is signed with a development certificate (`get-task-allow`).
