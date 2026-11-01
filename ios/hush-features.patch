@@ -1,0 +1,209 @@
+diff --git a/Source/ui_ios/EmulatorViewController.mm b/Source/ui_ios/EmulatorViewController.mm
+index 2dc0987f..afc8d98d 100644
+--- a/Source/ui_ios/EmulatorViewController.mm
++++ b/Source/ui_ios/EmulatorViewController.mm
+@@ -27,6 +27,19 @@ CPS2VM::NewFrameEvent::Connection g_newFrameConnection;
+ @property(nonatomic, strong) SaveStateViewController* saveStateViewController;
+ @end
+ 
++static float ApplyDeadzone(float v)
++{
++	NSUserDefaults* d = [NSUserDefaults standardUserDefaults];
++	float dz = [d objectForKey:@"hush.deadzone"] ? [d floatForKey:@"hush.deadzone"] : 0.1f;
++	float a = fabsf(v);
++	if(a <= dz) return 0;
++	float scaled = (a - dz) / (1.0f - dz);
++	return v < 0 ? -scaled : scaled;
++}
++
++static const unsigned int HushQuickSlot = 98;
++static const unsigned int HushAutoSlot = 99;
++
+ @implementation EmulatorViewController
+ 
+ + (void)registerPreferences
+@@ -140,16 +153,37 @@ CPS2VM::NewFrameEvent::Connection g_newFrameConnection;
+ 	}
+ 
+ 	g_virtualMachine->Resume();
++
++	NSUserDefaults* defaults = [NSUserDefaults standardUserDefaults];
++	[UIApplication sharedApplication].idleTimerDisabled = [defaults objectForKey:@"hush.keepAwake"] ? [defaults boolForKey:@"hush.keepAwake"] : YES;
++
++	if([defaults boolForKey:@"hush.autoSave"])
++	{
++		//Give the game time to boot so the state can be matched to it
++		dispatch_after(dispatch_time(DISPATCH_TIME_NOW, 4 * NSEC_PER_SEC), dispatch_get_main_queue(), ^{
++		  if(!g_virtualMachine) return;
++		  auto path = g_virtualMachine->GenerateStatePath(HushAutoSlot);
++		  if(fs::exists(path)) g_virtualMachine->LoadState(path);
++		});
++	}
++}
++
++- (void)autoSaveIfEnabled
++{
++	if(!g_virtualMachine || ![[NSUserDefaults standardUserDefaults] boolForKey:@"hush.autoSave"]) return;
++	g_virtualMachine->SaveState(g_virtualMachine->GenerateStatePath(HushAutoSlot)).wait();
+ }
+ 
+ - (void)viewDidDisappear:(BOOL)animated
+ {
++	[UIApplication sharedApplication].idleTimerDisabled = NO;
+ 	[[NSNotificationCenter defaultCenter] removeObserver:self.connectObserver];
+ 	[[NSNotificationCenter defaultCenter] removeObserver:self.disconnectObserver];
+ 	[self toggleHardwareController:NO];
+ 
+ 	[self resetStatsTimer];
+ 	g_virtualMachine->Pause();
++	[self autoSaveIfEnabled];
+ 	g_virtualMachine->Destroy();
+ 	delete g_virtualMachine;
+ 	g_virtualMachine = nullptr;
+@@ -164,6 +198,7 @@ CPS2VM::NewFrameEvent::Connection g_newFrameConnection;
+ 	if(g_virtualMachine)
+ 	{
+ 		g_virtualMachine->Pause();
++		[self autoSaveIfEnabled];
+ 	}
+ }
+ 
+@@ -187,6 +222,12 @@ CPS2VM::NewFrameEvent::Connection g_newFrameConnection;
+ 			    ^(GCExtendedGamepad* gamepad, GCControllerElement* element) {
+ 				  auto padHandler = static_cast<CPH_Generic*>(g_virtualMachine->GetPadHandler());
+ 				  if(!padHandler) return;
++				  if([[NSUserDefaults standardUserDefaults] boolForKey:@"hush.controllerHaptics"] &&
++				     [element isKindOfClass:[GCControllerButtonInput class]] && ((GCControllerButtonInput*)element).pressed)
++				  {
++					  static UIImpactFeedbackGenerator* haptic = [[UIImpactFeedbackGenerator alloc] initWithStyle:UIImpactFeedbackStyleLight];
++					  [haptic impactOccurred];
++				  }
+ 				  if(element == gamepad.buttonA)
+ 					  padHandler->SetButtonState(PS2::CControllerInfo::CROSS, gamepad.buttonA.pressed);
+ 				  else if(element == gamepad.buttonB)
+@@ -212,13 +253,13 @@ CPS2VM::NewFrameEvent::Connection g_newFrameConnection;
+ 				  }
+ 				  else if(element == gamepad.leftThumbstick)
+ 				  {
+-					  padHandler->SetAxisState(PS2::CControllerInfo::ANALOG_LEFT_X, gamepad.leftThumbstick.xAxis.value);
+-					  padHandler->SetAxisState(PS2::CControllerInfo::ANALOG_LEFT_Y, -gamepad.leftThumbstick.yAxis.value);
++					  padHandler->SetAxisState(PS2::CControllerInfo::ANALOG_LEFT_X, ApplyDeadzone(gamepad.leftThumbstick.xAxis.value));
++					  padHandler->SetAxisState(PS2::CControllerInfo::ANALOG_LEFT_Y, -ApplyDeadzone(gamepad.leftThumbstick.yAxis.value));
+ 				  }
+ 				  else if(element == gamepad.rightThumbstick)
+ 				  {
+-					  padHandler->SetAxisState(PS2::CControllerInfo::ANALOG_RIGHT_X, gamepad.rightThumbstick.xAxis.value);
+-					  padHandler->SetAxisState(PS2::CControllerInfo::ANALOG_RIGHT_Y, -gamepad.rightThumbstick.yAxis.value);
++					  padHandler->SetAxisState(PS2::CControllerInfo::ANALOG_RIGHT_X, ApplyDeadzone(gamepad.rightThumbstick.xAxis.value));
++					  padHandler->SetAxisState(PS2::CControllerInfo::ANALOG_RIGHT_Y, -ApplyDeadzone(gamepad.rightThumbstick.yAxis.value));
+ 				  }
+ #if __IPHONE_OS_VERSION_MAX_ALLOWED >= 120100
+ 				  if(@available(iOS 12.1, *))
+@@ -412,6 +453,19 @@ CPS2VM::NewFrameEvent::Connection g_newFrameConnection;
+ 		[alert addAction:action];
+ 	}
+ 
++	//Quick Save / Quick Load / Reset
++	[alert addAction:[UIAlertAction actionWithTitle:@"Quick Save" style:UIAlertActionStyleDefault handler:^(UIAlertAction*) {
++	  [self saveStateUsingPosition:HushQuickSlot];
++	}]];
++	[alert addAction:[UIAlertAction actionWithTitle:@"Quick Load" style:UIAlertActionStyleDefault handler:^(UIAlertAction*) {
++	  if(fs::exists(g_virtualMachine->GenerateStatePath(HushQuickSlot))) [self loadStateUsingPosition:HushQuickSlot];
++	}]];
++	[alert addAction:[UIAlertAction actionWithTitle:@"Toggle FPS Counter" style:UIAlertActionStyleDefault handler:^(UIAlertAction*) {
++	  auto& cfg = CAppConfig::GetInstance();
++	  cfg.SetPreferenceBoolean(PREFERENCE_UI_SHOWFPS, !cfg.GetPreferenceBoolean(PREFERENCE_UI_SHOWFPS));
++	  [self updateOnScreenWidgets];
++	}]];
++
+ 	//Settings
+ 	{
+ 		UIAlertAction* action = [UIAlertAction
+diff --git a/Source/ui_ios/SettingsViewController.mm b/Source/ui_ios/SettingsViewController.mm
+index f49208f6..3cbee92b 100644
+--- a/Source/ui_ios/SettingsViewController.mm
++++ b/Source/ui_ios/SettingsViewController.mm
+@@ -3,6 +3,7 @@
+ #include "AppConfig.h"
+ #include "PreferenceDefs.h"
+ #include "../gs/GSH_OpenGL/GSH_OpenGL.h"
++#include "../PS2VM_Preferences.h"
+ 
+ @implementation SettingsViewController
+ 
+@@ -61,16 +62,68 @@
+ 	[jitMode addTarget:self action:@selector(onJitModeChanged:) forControlEvents:UIControlEventValueChanged];
+ 	jitMode.selectedSegmentTintColor = VDColor(182, 255, 60);
+ 	[jitMode setTitleTextAttributes:@{ NSForegroundColorAttributeName : VDColor(11, 13, 16) } forState:UIControlStateSelected];
+-	UIView* footer = [[UIView alloc] initWithFrame:CGRectMake(0, 0, 320, 112)];
+-	padSize.frame = CGRectMake(20, 12, footer.bounds.size.width - 40, 36);
+-	padSize.autoresizingMask = UIViewAutoresizingFlexibleWidth;
+-	jitMode.frame = CGRectMake(20, 60, footer.bounds.size.width - 40, 36);
+-	jitMode.autoresizingMask = UIViewAutoresizingFlexibleWidth;
+-	[footer addSubview:padSize];
+-	[footer addSubview:jitMode];
++	UIStackView* stack = [[UIStackView alloc] initWithArrangedSubviews:@[ padSize, jitMode ]];
++	stack.axis = UILayoutConstraintAxisVertical;
++	stack.spacing = 12;
++	[stack addArrangedSubview:[self hushSwitchRow:@"Frame limiter (60 FPS)" key:nil action:@selector(onFrameLimiterChanged:) on:CAppConfig::GetInstance().GetPreferenceBoolean(PREF_PS2_LIMIT_FRAMERATE)]];
++	[stack addArrangedSubview:[self hushSwitchRow:@"Keep screen awake" key:@"hush.keepAwake" action:@selector(onHushSwitchChanged:) on:[defaults objectForKey:@"hush.keepAwake"] ? [defaults boolForKey:@"hush.keepAwake"] : YES]];
++	[stack addArrangedSubview:[self hushSwitchRow:@"Auto-save on exit, resume on launch" key:@"hush.autoSave" action:@selector(onHushSwitchChanged:) on:[defaults boolForKey:@"hush.autoSave"]]];
++	[stack addArrangedSubview:[self hushSwitchRow:@"Controller haptics" key:@"hush.controllerHaptics" action:@selector(onHushSwitchChanged:) on:[defaults boolForKey:@"hush.controllerHaptics"]]];
++
++	UILabel* deadzoneLabel = [[UILabel alloc] init];
++	deadzoneLabel.text = @"Stick deadzone";
++	deadzoneLabel.textColor = [UIColor colorWithWhite:0.92 alpha:1];
++	UISlider* deadzone = [[UISlider alloc] init];
++	deadzone.minimumValue = 0;
++	deadzone.maximumValue = 0.5;
++	deadzone.value = [defaults objectForKey:@"hush.deadzone"] ? [defaults floatForKey:@"hush.deadzone"] : 0.1;
++	deadzone.minimumTrackTintColor = VDColor(182, 255, 60);
++	[deadzone addTarget:self action:@selector(onDeadzoneChanged:) forControlEvents:UIControlEventValueChanged];
++	UIStackView* dzRow = [[UIStackView alloc] initWithArrangedSubviews:@[ deadzoneLabel, deadzone ]];
++	dzRow.spacing = 12;
++	[deadzoneLabel setContentHuggingPriority:UILayoutPriorityRequired forAxis:UILayoutConstraintAxisHorizontal];
++	[stack addArrangedSubview:dzRow];
++
++	UIView* footer = [[UIView alloc] initWithFrame:CGRectMake(0, 0, 320, 36 * 2 + 12 * 6 + 32 * 4 + 32 + 24)];
++	stack.frame = CGRectMake(20, 12, 280, footer.bounds.size.height - 24);
++	stack.autoresizingMask = UIViewAutoresizingFlexibleWidth;
++	[footer addSubview:stack];
+ 	self.tableView.tableFooterView = footer;
+ }
+ 
++- (UIView*)hushSwitchRow:(NSString*)title key:(NSString*)key action:(SEL)action on:(BOOL)on
++{
++	UILabel* label = [[UILabel alloc] init];
++	label.text = title;
++	label.textColor = [UIColor colorWithWhite:0.92 alpha:1];
++	label.numberOfLines = 0;
++	UISwitch* toggle = [[UISwitch alloc] init];
++	toggle.on = on;
++	toggle.onTintColor = VDColor(182, 255, 60);
++	toggle.accessibilityIdentifier = key;
++	[toggle addTarget:self action:action forControlEvents:UIControlEventValueChanged];
++	[toggle setContentHuggingPriority:UILayoutPriorityRequired forAxis:UILayoutConstraintAxisHorizontal];
++	UIStackView* row = [[UIStackView alloc] initWithArrangedSubviews:@[ label, toggle ]];
++	row.alignment = UIStackViewAlignmentCenter;
++	row.spacing = 12;
++	return row;
++}
++
++- (void)onHushSwitchChanged:(UISwitch*)sender
++{
++	[[NSUserDefaults standardUserDefaults] setBool:sender.on forKey:sender.accessibilityIdentifier];
++}
++
++- (void)onFrameLimiterChanged:(UISwitch*)sender
++{
++	CAppConfig::GetInstance().SetPreferenceBoolean(PREF_PS2_LIMIT_FRAMERATE, sender.on);
++}
++
++- (void)onDeadzoneChanged:(UISlider*)sender
++{
++	[[NSUserDefaults standardUserDefaults] setFloat:sender.value forKey:@"hush.deadzone"];
++}
++
+ - (void)onJitModeChanged:(UISegmentedControl*)sender
+ {
+ 	[[NSUserDefaults standardUserDefaults] setInteger:sender.selectedSegmentIndex forKey:@"hush.jitMode"];

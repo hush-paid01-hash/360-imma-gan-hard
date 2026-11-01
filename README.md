@@ -17,6 +17,11 @@ On a Mac with Xcode:
 2. Follow Play!'s iOS build steps (`installer_ios/`, CMake `-G Xcode -DCMAKE_TOOLCHAIN_FILE=deps/Dependencies/cmake-ios/ios.cmake`).
 3. Download the `HushEmulator-5.0.0.ipa` artifact from the Actions run and sign/install it with ESign (the IPA is unsigned; ESign signs it with your certificate). JIT is still required for speed.
 
+`ios/hush-features.patch` (apply after `hush-emulator.patch`) adds:
+- Settings: frame limiter toggle, keep screen awake, auto-save on exit / auto-resume on launch, controller haptics, stick deadzone slider
+- In-game pause menu: Quick Save, Quick Load, Toggle FPS counter
+- Hardware controller sticks use the deadzone setting
+
 ### Game closes and returns to the home screen?
 That is a crash, almost always because JIT isn't active. The app now tests for JIT before starting a game and warns you instead of crashing; use **Enable with StikDebug**, or "Start anyway" at your own risk. Also make sure the IPA is signed with a development certificate (`get-task-allow`).
 
