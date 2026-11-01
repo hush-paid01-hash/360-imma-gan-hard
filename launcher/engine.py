@@ -33,8 +33,8 @@ def build_command(engine: str, game: str, bios: str | None = None,
     if fullscreen:
         cmd.append("-fullscreen")
     cmd.append("-fastboot" if fast_boot else "-slowboot")
-    if bios:
-        cmd += ["-bios", bios]
+    # PCSX2's "-bios" boots the BIOS shell and ignores the disc, so the BIOS is
+    # never passed here; it is taken from PCSX2's own BIOS folder setting.
     if Path(game).suffix.lower() == ".elf":
         cmd += ["-elf", game]
     else:
@@ -42,7 +42,14 @@ def build_command(engine: str, game: str, bios: str | None = None,
     return cmd
 
 
-def launch(engine: str, game: str, **kw) -> subprocess.Popen:
+def launch(engine: str, game: str, wait: float = 3.0, **kw) -> subprocess.Popen:
     if not Path(game).is_file():
         raise FileNotFoundError(game)
-    return subprocess.Popen(build_command(engine, game, **kw))
+    proc = subprocess.Popen(build_command(engine, game, **kw),
+                            stdout=subprocess.DEVNULL, stderr=subprocess.PIPE)
+    try:
+        proc.wait(timeout=wait)
+    except subprocess.TimeoutExpired:
+        return proc  # still running: started fine
+    err = (proc.stderr.read() or b"").decode(errors="replace").strip()
+    raise RuntimeError(f"Engine exited early (code {proc.returncode}). {err[-400:]}")

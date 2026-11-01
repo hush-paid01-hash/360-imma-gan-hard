@@ -84,7 +84,7 @@ class App(tk.Tk):
             return messagebox.showinfo("Pick a game", "Select a game first.")
         try:
             engine.launch(eng, str(self.games[sel[0]]), bios=self.cfg.get("bios"))
-        except OSError as e:
+        except (OSError, RuntimeError) as e:
             messagebox.showerror("Launch failed", str(e))
 
 
